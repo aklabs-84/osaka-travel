@@ -269,7 +269,6 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <h2 class="sec" id="th">오늘의 길</h2>
   <div class="tl" id="tl"></div>
   <div id="un"></div>
-  <button class="btn big" style="margin-top:18px" onclick="openSheet(null,{})">＋ 가고 싶은 곳 추가</button>
   <div class="ft"></div>
 </section>
 
@@ -623,8 +622,9 @@ function tlHTML(d){
 }
 function unHTML(d){
  const u=PLACES.filter(p=>!p.home&&!p.day&&pShow(p));
- if(!u.length)return '';
- return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="mi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}${obadge(p)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`;
+ const pb=d.k==='pre'?`<button class="addslot" style="margin-top:12px" onclick="openSheet(null,{})">＋ 가고 싶은 곳 추가</button>`:'';
+ if(!u.length)return pb;
+ return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="mi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}${obadge(p)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`+pb;
 }
 function assign(id,dk,slot){const p=PLACES.find(x=>x.id===id);p.day=dk;p.slot=slot;savePlaces();render();gtoast('일정에 넣었어요')}
 /* 직접 만든 할 일: INFO.todos=[[아이디,글,날짜칸(pre/d0/d1/d2)],…] (정보와 함께 같이 쓰기로 동기화) */
@@ -641,7 +641,7 @@ function mustRender(){
  const op=items.filter(o=>!done.has(o.t.id)),dn=items.filter(o=>done.has(o.t.id));
  $('#must').innerHTML=(op.length?op.map(o=>todoItem(o.t,o.m)).join(''):`<div class="empty">${items.length?'할 일을 모두 끝냈어요! 🎉':'이날은 꼭 해야 하는 일이 없어요. 마음 편히 돌아다니세요 😊'}</div>`)
   +(dn.length?`<button class="dnh ${dnOpen?'open':''}" onclick="dnTog()" aria-expanded="${dnOpen}">✅ 완료한 일 (${dn.length})<i>▼</i></button>${dnOpen?dn.map(o=>todoItem(o.t,o.m)).join(''):''}`:'');
- $('#mtadd').innerHTML=mtOpen?`<div class="mtadd"><input id="mti" maxlength="40" placeholder="예: 환전하기" value="${esc(mtEdit?(myTodos().find(m=>m[0]===mtEdit)||[])[1]||'':'')}" onkeydown="if(event.key==='Enter')mtSave()" aria-label="할 일 내용"><button class="btn" onclick="mtSave()">${mtEdit?'저장':'추가'}</button><button class="btn ln" onclick="mtClose()">취소</button></div>`:`<button class="addslot" onclick="mtStart()">＋ 할 일 추가</button>`;
+ $('#mtadd').innerHTML=mtOpen?`<div class="mtadd"><input id="mti" maxlength="40" placeholder="예: 환전하기" value="${esc(mtEdit?(myTodos().find(m=>m[0]===mtEdit)||[])[1]||'':'')}" onkeydown="if(event.key==='Enter')mtSave()" aria-label="할 일 내용"><button class="btn" onclick="mtSave()">${mtEdit?'저장':'추가'}</button><button class="btn ln" onclick="mtClose()">취소</button></div>`:`<button class="btn big" style="width:100%;margin-top:12px" onclick="mtStart()">＋ 할 일 추가</button>`;
  if(mtOpen){const i=$('#mti');if(i&&document.activeElement!==i)i.focus()}
 }
 function dnTog(){dnOpen=!dnOpen;store.set('dnopen',dnOpen?1:0);mustRender()}
