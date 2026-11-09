@@ -145,6 +145,17 @@ body.mapmode #ms{display:block}
 .mk{width:0;height:0;position:relative;cursor:pointer}
 .mk .pi{position:absolute;left:-22px;top:-22px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--card);border:3px solid var(--sea);border-radius:14px;box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .15s}
 .mk:hover .pi{transform:scale(1.1)}
+.mk.o-a .pi{border-color:#2F6FE0}.mk.o-b .pi{border-color:#E0457B}
+.ob{display:inline-block;font-size:12.5px;font-weight:800;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:1px;color:#fff;background:var(--sub)}
+.ob.a{background:#2F6FE0}.ob.b{background:#E0457B}
+.vw{display:flex;gap:6px;flex-wrap:wrap}
+.vw button{font:inherit;font-weight:800;font-size:15px;min-height:40px;padding:6px 12px;border-radius:10px;background:var(--card);color:var(--tx);border:2px solid var(--line);cursor:pointer;transition:background .15s}
+.vw button:hover{background:var(--line)}
+.vw button.on,.vw button.on:hover{background:var(--sea);border-color:var(--sea);color:#fff}
+#vwm{position:absolute;left:12px;right:70px;top:calc(120px + env(safe-area-inset-top));z-index:5}
+#ms.picking #vwm{display:none}
+#vw0{margin:4px 0 6px}
+.who3{display:flex;gap:8px;flex-wrap:wrap}
 .mk .pl{position:absolute;left:0;top:26px;transform:translateX(-50%);white-space:nowrap;font-weight:900;font-size:15px;color:var(--tx);text-shadow:-2px 0 var(--card),2px 0 var(--card),0 -2px var(--card),0 2px var(--card),0 0 5px var(--card);pointer-events:none}
 .mk.sel .pi{background:var(--sun);border-color:var(--tx);transform:scale(1.28)}
 .mk.home .pi{left:-28px;top:-28px;width:56px;height:56px;font-size:29px;background:var(--sea);border-color:var(--card)}
@@ -243,6 +254,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
 <div class="days" id="days"></div>
 
 <section class="pane on" id="p0">
+  <div class="vw" id="vw0"></div>
   <h2 class="sec" id="mh">꼭 해야 하는 일</h2>
   <div class="must" id="must"></div>
   <div id="nudge"></div>
@@ -296,6 +308,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <div id="map"></div>
   <div class="mtop" id="mtop">🗺️ 오사카 <small>대략적인 위치예요</small></div>
   <button class="madd" id="bAdd">＋ 가고 싶은 곳 추가</button>
+  <div class="vw" id="vwm"></div>
   <div class="tools">
     <button id="bLoc" aria-label="내 위치">📍<small>내 위치</small></button>
     <button id="bAll" aria-label="전체 보기">⤢<small>전체</small></button>
@@ -340,7 +353,7 @@ const OMap=(()=>{
  const applyLab=()=>{if(ready)hid.forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',lab?'visible':'none')})};
  const hav=(a,b)=>{const t=x=>x*Math.PI/180,R=6371,dl=t(b.lat-a.lat),dn=t(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
  const home=()=>PLACES.find(p=>p.home);
- const vis=()=>PLACES.map((p,i)=>({p,i})).filter(o=>o.p.lat!=null&&(flt==='all'||o.p.c===flt||o.p.home));
+ const vis=()=>PLACES.map((p,i)=>({p,i})).filter(o=>o.p.lat!=null&&(flt==='all'||o.p.c===flt||o.p.home)&&pShow(o.p));
  const bottomPad=()=>(opt.drawerH?opt.drawerH():90)+30;
  function box(cls,html){const d=document.createElement('div');d.className=cls;d.innerHTML=html;return d}
  function add(el,lng,lat,z){const m=new maplibregl.Marker({element:el}).setLngLat([lng,lat]).addTo(map);if(z)el.style.zIndex=z;mk.push(m);return m}
@@ -362,7 +375,7 @@ const OMap=(()=>{
    }
    const o=c.m[0],p=o.p;
    const showLabel=z>=14.3||p.home||o.i===sel;
-   const e=box('mk'+(p.home?' home':'')+(o.i===sel?' sel':''),'<span class="pi">'+p.i+'</span>'+(showLabel?'<span class="pl">'+p.s+'</span>':''));
+   const e=box('mk'+(p.home?' home':'')+(!p.home&&twoOn()&&p.o?' o-'+p.o:'')+(o.i===sel?' sel':''),'<span class="pi">'+p.i+'</span>'+(showLabel?'<span class="pl">'+p.s+'</span>':''));
    e.onclick=ev=>{ev.stopPropagation();opt.onPick&&opt.onPick(o.i)};
    add(e,p.lng,p.lat,o.i===sel?9:(p.home?5:3));
    near.push(p);
@@ -514,6 +527,34 @@ function kindsRebuild(){
  (Array.isArray(INFO.kinds)?INFO.kinds:[]).forEach(k=>{if(Array.isArray(k)&&k[0]){KINDS.push(k);KIND[k[0]]=k[2]}});
 }
 kindsRebuild();
+/* 둘이서 쓰기: 이 폰 주인(WHO.me: a/b, 없으면 꺼짐)과 보기(WHO.view: all/a/b). 장소마다 p.o = a/b/없음(같이) */
+const WHO={me:store.get('who',''),view:store.get('view','all')};
+const twoOn=()=>WHO.me==='a'||WHO.me==='b';
+const pNames=()=>{const n=Array.isArray(INFO.names)?INFO.names:[];return[(n[0]||'남편').slice(0,6),(n[1]||'아내').slice(0,6)]};
+const pShow=p=>p.home||!twoOn()||WHO.view==='all'||!p.o||p.o===WHO.view;
+const obadge=p=>twoOn()&&(p.o==='a'||p.o==='b')?`<span class="ob ${p.o}">${esc(pNames()[p.o==='a'?0:1])}</span>`:(twoOn()&&!p.home?'<span class="ob">같이</span>':'');
+function vwHTML(){
+ const h=twoOn()?`<button class="${WHO.view==='all'?'on':''}" onclick="setView('all')">같이 보기</button><button class="${WHO.view==='a'?'on':''}" onclick="setView('a')">${esc(pNames()[0])} 것</button><button class="${WHO.view==='b'?'on':''}" onclick="setView('b')">${esc(pNames()[1])} 것</button>`:'';
+ ['vw0','vwm'].forEach(id=>{const e=document.getElementById(id);if(e){e.innerHTML=h;e.style.display=h?'':'none'}});
+}
+function setView(v){WHO.view=v;store.set('view',v);vwHTML();afterChange(null)}
+function setWho(v){
+ WHO.me=v;store.set('who',v);if(!v){WHO.view='all';store.set('view','all')}
+ vwHTML();infoHTML();afterChange(null);
+ gtoast(v?'이 폰은 '+pNames()[v==='a'?0:1]+' 폰이에요':'둘이서 쓰기를 껐어요');
+}
+function setNm(i,v){
+ const n=pNames();n[i]=v.trim().slice(0,6)||(i?'아내':'남편');
+ INFO.names=n;store.set('info',INFO);
+}
+function whoCard(){
+ const n=pNames();
+ return `<div class="card"><h3>🧑‍🤝‍🧑 둘이서 따로·같이 보기</h3>
+ <p class="hint" style="margin:0 0 10px">이 폰이 누구 것인지 고르면, 장소를 넣을 때 “누구 장소”가 붙고 지도·일정에서 내 것만 또는 같이 볼 수 있어요. 부부가 각자 폰에서 한 번씩 고르세요.</p>
+ <div class="fl"><span>두 사람 이름 (같이 쓰기를 켜면 상대 폰에도 보여요)</span><div class="fr"><input value="${esc(n[0])}" maxlength="6" oninput="setNm(0,this.value)" aria-label="첫째 사람 이름"><input value="${esc(n[1])}" maxlength="6" oninput="setNm(1,this.value)" aria-label="둘째 사람 이름"></div></div>
+ <div class="fl"><span>이 폰은 누구 거예요?</span><div class="who3"><button class="btn ${WHO.me==='a'?'':'ln'}" onclick="setWho('a')">${esc(n[0])}</button><button class="btn ${WHO.me==='b'?'':'ln'}" onclick="setWho('b')">${esc(n[1])}</button><button class="btn ln" onclick="setWho('')">안 쓸래요</button></div></div>
+ </div>`;
+}
 function syncHotel(){const h=PLACES.find(p=>p.home);if(h){h.n=INFO.hotelKo||'우리 숙소'}}
 syncHotel();
 const done=new Set(store.get('done',[]));
@@ -551,7 +592,7 @@ function todoShow(t){
 function postcard(p){
  const k=PLACES.indexOf(p);
  const tb=p.c==='shop'?`<span class="tb ${p.tax==='y'?'y':p.tax==='n'?'n':''}">${p.tax==='y'?'면세 가능 ✓':p.tax==='n'?'면세 안 됨':'면세 확인 전'}</span>`:'';
- return `<div class="post"><div class="ph ${PC[p.c]||'pc-do'}"><span>${esc(p.i)}</span><b>${esc(p.n)}</b></div><div class="bd">
+ return `<div class="post"><div class="ph ${PC[p.c]||'pc-do'}"><span>${esc(p.i)}</span><b>${esc(p.n)}${obadge(p)}</b></div><div class="bd">
   ${p.d?`<p>${esc(p.d)}</p>`:''}${p.memo?`<p class="memo">📝 ${esc(p.memo)}</p>`:''}
   <div class="row"><span class="eta">${distText(p)}</span>${tb}</div>
   <div class="row">
@@ -567,15 +608,15 @@ function tlHTML(d){
  const slots=d.k==='d0'?[['🛬','도착','arr'],...BASE]:BASE;
  return slots.map(([em,lb,key])=>{
   const fx=((FIX[d.k]||{})[key]||[]).map(guideCard).join('');
-  const ps=PLACES.filter(p=>p.day===d.k&&p.slot===key).map(postcard).join('');
+  const ps=PLACES.filter(p=>p.day===d.k&&p.slot===key&&pShow(p)).map(postcard).join('');
   const add=key==='arr'?'':`<button class="addslot" onclick="openSheet(null,{day:'${d.k}',slot:'${key}'})">＋ ${lb}에 갈 곳 추가</button>`;
   return `<div class="slot"><div class="when"><i>${em}</i></div><h3>${lb}</h3>${fx}${ps}${add}</div>`;
  }).join('');
 }
 function unHTML(d){
- const u=PLACES.filter(p=>!p.home&&!p.day);
+ const u=PLACES.filter(p=>!p.home&&!p.day&&pShow(p));
  if(!u.length)return '';
- return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="mi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`;
+ return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="mi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}${obadge(p)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`;
 }
 function assign(id,dk,slot){const p=PLACES.find(x=>x.id===id);p.day=dk;p.slot=slot;savePlaces();render();gtoast('일정에 넣었어요')}
 function render(){
@@ -622,7 +663,7 @@ function toGuide(id){go(2);setTimeout(()=>{tog(id,true);$('#g-'+id).scrollIntoVi
 let pending=-1,scrolling=false,picking=false,prevTab=0;
 const subOf=p=>p.home?'우리 숙소'+(p.ex?' · '+p.ex+'번 출구':''):(p.al||KIND[p.c]||'');
 function railHTML(){
- $('#rail').innerHTML=PLACES.map((p,i)=>p.lat==null?'':`<div class="pcard" id="pc${i}" data-i="${i}"><div class="t1"><span class="ic ${PC[p.c]||'pc-do'}">${esc(p.i)}</span><div><b>${esc(p.n)}</b><span class="s">${esc(subOf(p))}</span></div></div><div class="t2"><span class="eta">${distText(p)}</span><a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">구글 지도 ↗</a>${p.home?'':`<button class="btn ln" aria-label="고치기" onclick="openSheet('${p.id}')">✎</button>`}</div></div>`).join('');
+ $('#rail').innerHTML=PLACES.map((p,i)=>p.lat==null||!pShow(p)?'':`<div class="pcard" id="pc${i}" data-i="${i}"><div class="t1"><span class="ic ${PC[p.c]||'pc-do'}">${esc(p.i)}</span><div><b>${esc(p.n)}${obadge(p)}</b><span class="s">${esc(subOf(p))}</span></div></div><div class="t2"><span class="eta">${distText(p)}</span><a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">구글 지도 ↗</a>${p.home?'':`<button class="btn ln" aria-label="고치기" onclick="openSheet('${p.id}')">✎</button>`}</div></div>`).join('');
 }
 function bindRail(){
  /* 카드를 누르면 그 장소로 지도가 이동 (안의 버튼·링크는 제외) */
@@ -659,7 +700,7 @@ const DAYSEL=[['','아직 몰라요'],['d0','11/30'],['d1','12/1'],['d2','12/2']
 let draft=null;
 function openSheet(id,pre){
  const p=id?PLACES.find(x=>x.id===id):null;
- draft=p?Object.assign({},p,{_edit:id}):Object.assign({id:'',n:'',c:'shop',i:'🛍',memo:'',link:'',tax:'',day:'',slot:'',lat:null,lng:null,d:''},pre||{});
+ draft=p?Object.assign({},p,{_edit:id}):Object.assign({id:'',o:twoOn()?WHO.me:'',n:'',c:'shop',i:'🛍',memo:'',link:'',tax:'',day:'',slot:'',lat:null,lng:null,d:''},pre||{});
  showSheet();
 }
 function showSheet(){renderSheet();$('#sheet').classList.add('on')}
@@ -697,6 +738,7 @@ function renderSheet(){
  <label class="fl"><span>이름</span><input id="sn" value="${esc(d.n)}" oninput="dr('n',this.value)" placeholder="예: 모리타 만년필" maxlength="40"></label>
  <div class="fl"><span>어떤 곳이에요?</span><div class="opts">${KINDS.map(k=>`<span class="kc"><button class="${d.c===k[0]?'on':''}" onclick="dr('c','${k[0]}',1)">${esc(k[1])} ${esc(k[2])}</button>${/^k\d/.test(k[0])?`<button class="kx" onclick="kindDel('${k[0]}')" aria-label="${esc(k[2])} 지우기">✕</button>`:''}</span>`).join('')}${(INFO.kinds||[]).length<8?`<button class="kadd" onclick="draft._mk=!draft._mk;renderSheet()">＋ 직접 만들기</button>`:''}</div>
   ${d._mk?`<div class="kmk"><button class="kem" onclick="draft._kp=!draft._kp;renderSheet()" aria-label="이모티콘 고르기">${esc(d._ke||'😀')}</button><input id="kmn" value="${esc(d._kn||'')}" oninput="draft._kn=this.value" placeholder="이름 (6글자까지)" maxlength="6" aria-label="종류 이름"><button class="btn" onclick="kindAdd()">추가</button></div>${d._kp?`<div class="kpk">${EMO.map(g=>`<div class="kg"><small>${g[0]}</small><div>${[...g[1]].map(e=>`<button onclick="kindEmo('${e}')">${e}</button>`).join('')}</div></div>`).join('')}</div>`:'<p class="hint">😀 칸을 눌러 이모티콘을 골라요.</p>'}`:''}</div>
+ ${twoOn()?`<div class="fl"><span>누구 장소예요?</span><div class="opts">${[['a',pNames()[0]],['b',pNames()[1]],['','같이']].map(o=>`<button class="${(d.o||'')===o[0]?'on':''}" onclick="dr('o','${o[0]}',1)">${esc(o[1])}</button>`).join('')}</div></div>`:''}
  <div class="fl"><span>위치 (지도에 표시하려면)</span>
   <div class="srch"><input id="gl" type="url" inputmode="url" placeholder="구글 지도 공유 링크 붙여넣기"><button class="btn" onclick="gmapGo()">가져오기</button></div>
   <p class="hint" style="margin:4px 0 10px">구글 지도에서 장소의 “공유”를 눌러 복사한 링크예요.</p>
@@ -768,7 +810,7 @@ function saveSheet(){
  if(!d.n.trim()){gtoast('이름을 적어 주세요');return}
  const kd=KINDS.find(k=>k[0]===d.c)||KINDS[0];
  const home=d.home?1:0;
- const o={id:d._edit||('u'+Date.now()),n:d.n.trim(),s:d.n.trim().slice(0,10),c:d.c,i:d.i||kd[1],lat:d.lat,lng:d.lng,memo:d.memo||'',link:(d.link||'').trim(),tax:d.tax||'',day:d.day||'',slot:d.day?(d.slot||'noon'):'',d:d.d||'',al:d.al||'',ex:d.ex||'',L:d.L||'',code:d.code||'',home};
+ const o={id:d._edit||('u'+Date.now()),n:d.n.trim(),s:d.n.trim().slice(0,10),c:d.c,i:d.i||kd[1],lat:d.lat,lng:d.lng,memo:d.memo||'',link:(d.link||'').trim(),tax:d.tax||'',day:d.day||'',slot:d.day?(d.slot||'noon'):'',d:d.d||'',al:d.al||'',ex:d.ex||'',L:d.L||'',code:d.code||'',home,o:d.o||''};
  if(d._edit)Object.assign(PLACES.find(x=>x.id===d._edit),o);else PLACES.push(o);
  savePlaces();closeSheet();afterChange(o.id);gtoast('저장했어요');
 }
@@ -929,7 +971,7 @@ function qrShow(){
  <p class="hint" style="margin-top:12px">${esc(store.get('qrmemo',''))||'입국 심사 QR'}<br>화면 밝기를 최대로 올리면 잘 읽혀요.</p>`);
 }
 function infoHTML(){
- let h=syncCard()+qrCard(),open=false;
+ let h=syncCard()+whoCard()+qrCard(),open=false;
  IF.forEach(f=>{
   if(f[0]==='sec'){if(open)h+='</div>';h+=`<div class="card"><h3>${f[1]}</h3>`;open=true;return}
   const [k,lb,ty,ph,cp,hn]=f,v=k==='rate'?Math.round(INFO.rate*100):INFO[k];
@@ -1006,7 +1048,7 @@ function syncApply(D){
   spent.splice(0,spent.length,...sp);
   done.clear();Object.keys(D.dn||{}).forEach(k=>{if(D.dn[k].v!==null)done.add(k)});
   Object.keys(D.inf||{}).forEach(k=>{if(D.inf[k].v!==null&&!SYNC_PRIVATE.includes(k))INFO[k]=JSON.parse(D.inf[k].v)});
-  kindsRebuild();
+  kindsRebuild();vwHTML();
   store.set('places',PLACES);store.set('spent',spent);store.set('done',[...done]);store.set('info',INFO);
   store.set('syncbase',D);
  }finally{syncApplying=false}
@@ -1020,8 +1062,9 @@ function reportDoc(){
  const dl=k=>(DAYSEL.find(x=>x[0]===k)||['','날짜 미정'])[1],sl=k=>k==='arr'?'도착':((BASE.find(x=>x[2]===k)||[0,'시간 미정'])[1]);
  const dOrd=k=>k?DAYSEL.findIndex(x=>x[0]===k):9,sOrd=k=>k==='arr'?0:(1+BASE.findIndex(x=>x[2]===k));
  const real=PLACES.filter(p=>!p.home);
- const plan=PLACES.slice().sort((a,b)=>dOrd(a.day)-dOrd(b.day)||sOrd(a.slot)-sOrd(b.slot)).map(p=>[dl(p.day),p.day?sl(p.slot):'',p.n||'',KIND[p.c]||'',p.memo||'',p.link||'']);
- const places=real.map(p=>[p.n||'',KIND[p.c]||'',dl(p.day),p.day?sl(p.slot):'',p.memo||'',p.link||'']);
+ const ow=p=>p.o==='a'?pNames()[0]:p.o==='b'?pNames()[1]:'';
+ const plan=PLACES.slice().sort((a,b)=>dOrd(a.day)-dOrd(b.day)||sOrd(a.slot)-sOrd(b.slot)).map(p=>[dl(p.day),p.day?sl(p.slot):'',p.n||'',KIND[p.c]||'',p.memo||'',p.link||'',ow(p)]);
+ const places=real.map(p=>[p.n||'',KIND[p.c]||'',dl(p.day),p.day?sl(p.slot):'',p.memo||'',p.link||'',ow(p)]);
  const md=t=>{const d=new Date(t);return (d.getMonth()+1)+'월 '+d.getDate()+'일'};
  const ex=spent.slice().sort((a,b)=>a.t-b.t).map(e=>[md(e.t),(EXK.find(x=>x[0]===e.c)||EXK[4])[2],e.n||'',e.y]);
  const GN={before:'출발 전',air:'비행기·공항',arrive:'도착한 날',back:'돌아오는 날'};
@@ -1092,7 +1135,7 @@ document.querySelectorAll('.ft').forEach(e=>e.innerHTML=FOOT);
 function applyTheme(d){const r=document.documentElement;if(d)r.dataset.theme='dark';else delete r.dataset.theme;$('#mode').textContent=d?'밝게':'어둡게';store.set('theme',d?'dark':'')}
 $('#mode').onclick=()=>applyTheme(document.documentElement.dataset.theme!=='dark');
 applyTheme(store.get('theme','')==='dark');
-$('#guide').innerHTML=guideHTML();infoHTML();dd();days();render();exkHTML();money();
+$('#guide').innerHTML=guideHTML();vwHTML();infoHTML();dd();days();render();exkHTML();money();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

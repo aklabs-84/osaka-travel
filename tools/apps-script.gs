@@ -221,19 +221,19 @@ function table_(sh, row, headers, rows, numCols) {
 function widths_(sh, ws) { ws.forEach((w, i) => sh.setColumnWidth(i + 1, w)); }
 
 function drawPlan_(sh, rep) {
-  title_(sh, '📅 ' + rep.title + ' — 일정', 6);
-  const end = table_(sh, 4, ['날짜', '시간', '장소', '종류', '메모', '링크'], rep.plan);
+  title_(sh, '📅 ' + rep.title + ' — 일정', 7);
+  const end = table_(sh, 4, ['날짜', '시간', '장소', '종류', '메모', '링크', '누가'], rep.plan);
   rep.plan.forEach((r, i) => { const bg = DAYBG[r[0]]; if (bg) sh.getRange(5 + i, 1, 1, 2).setBackground(bg).setFontWeight('bold'); });
-  widths_(sh, [90, 70, 230, 70, 260, 200]);
+  widths_(sh, [90, 70, 230, 70, 260, 200, 70]);
   sh.setFrozenRows(4);
   return end;
 }
 
 function drawPlaces_(sh, rep) {
-  title_(sh, '📍 가고 싶은 곳 · 장소 목록', 6);
-  table_(sh, 4, ['장소', '종류', '날짜', '시간', '메모', '링크'], rep.places);
+  title_(sh, '📍 가고 싶은 곳 · 장소 목록', 7);
+  table_(sh, 4, ['장소', '종류', '날짜', '시간', '메모', '링크', '누가'], rep.places);
   rep.places.forEach((r, i) => { const bg = KINDBG[r[1]]; if (bg) sh.getRange(5 + i, 2).setBackground(bg).setFontWeight('bold').setHorizontalAlignment('center'); });
-  widths_(sh, [240, 70, 90, 70, 260, 200]);
+  widths_(sh, [240, 70, 90, 70, 260, 200, 70]);
   sh.setFrozenRows(4);
 }
 
