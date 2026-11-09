@@ -120,7 +120,7 @@ body.mapmode #ms{display:block}
 .tools{position:absolute;right:10px;top:calc(12px + env(safe-area-inset-top));z-index:5;display:flex;flex-direction:column;gap:8px}
 .tools button{width:48px;height:48px;background:var(--card);border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:19px;font-weight:700;line-height:1;text-align:center;transition:transform .1s,background .15s}
 .tools button small{font-size:10px;font-weight:800;margin-top:1px}
-.tools button:hover{background:var(--line)}.tools button:active{transform:scale(.94)}
+.tools button:hover{background:var(--line)}.tools button.on,.tools button.on:hover{background:var(--sea);color:#fff}.tools button:active{transform:scale(.94)}
 .madd{position:absolute;left:12px;top:calc(66px + env(safe-area-inset-top));z-index:5;background:var(--sun);color:var(--sunt);border-radius:14px;padding:12px 16px;font:inherit;font-weight:800;font-size:16px;box-shadow:0 3px 10px rgba(0,0,0,.22);cursor:pointer}
 .madd:hover{filter:brightness(.95)}.madd:active{transform:scale(.97)}
 #ms.picking .madd{display:none}
@@ -299,6 +299,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <div class="tools">
     <button id="bLoc" aria-label="내 위치">📍<small>내 위치</small></button>
     <button id="bAll" aria-label="전체 보기">⤢<small>전체</small></button>
+    <button id="bLab" aria-label="지도 이름 켜고 끄기" aria-pressed="false">🏷<small>이름</small></button>
     <button id="bIn" aria-label="확대">＋</button>
     <button id="bOut" aria-label="축소">－</button>
   </div>
@@ -335,7 +336,8 @@ const PLACES=[
 const STATIONS=[['기타하마역',34.6905,135.5155],['사카이스지혼마치역',34.6823,135.5154],['덴마바시역',34.6925,135.5215],['요도야바시역',34.6921,135.5011],['혼마치역',34.6830,135.5010],['닛폰바시역',34.6672,135.5064],['난바역',34.6659,135.5008],['우메다역',34.7055,135.4983]];
 
 const OMap=(()=>{
- let map,sel=-1,flt='all',ready=false,mk=[],me=null,opt={};
+ let map,sel=-1,flt='all',ready=false,mk=[],me=null,opt={},lab=false,hid=[];
+ const applyLab=()=>{if(ready)hid.forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',lab?'visible':'none')})};
  const hav=(a,b)=>{const t=x=>x*Math.PI/180,R=6371,dl=t(b.lat-a.lat),dn=t(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
  const home=()=>PLACES.find(p=>p.home);
  const vis=()=>PLACES.map((p,i)=>({p,i})).filter(o=>o.p.lat!=null&&(flt==='all'||o.p.c===flt||o.p.home));
@@ -380,14 +382,14 @@ const OMap=(()=>{
   map.touchZoomRotate.disableRotation();
   map.on('load',()=>{
    map.getStyle().layers.forEach(l=>{if(l.type==='symbol'&&l.layout&&l.layout['text-field'])map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:ko'],['get','name:latin'],['get','name']])});
-   ['label_other','highway-name-minor','highway-name-path','poi_r20','poi_r7','poi_r1'].forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility','none')});
+   ['label_other','highway-name-minor','highway-name-path','poi_r20','poi_r7','poi_r1'].forEach(id=>{if(map.getLayer(id)){map.setLayoutProperty(id,'visibility','none');hid.push(id)}});
    if(o.simple){map.getStyle().layers.forEach(l=>{const id=l.id;
     const hide=l.type==='symbol'||/^building/.test(id)||/(minor|path|service|link|rail|street|casing|boundary|area_pattern|secondary_tertiary)/.test(id)||/^(landuse_|landcover_)/.test(id)&&id!=='landcover_wood'&&id!=='landcover_grass';
-    if(hide&&map.getLayer(id))map.setLayoutProperty(id,'visibility','none')});
+    if(hide&&map.getLayer(id)){map.setLayoutProperty(id,'visibility','none');if(!hid.includes(id))hid.push(id)}});
     ['road_trunk_primary','road_motorway'].forEach(id=>{if(map.getLayer(id)){map.setLayoutProperty(id,'visibility','visible');map.setPaintProperty(id,'line-color',o.road||'#ffffff')}});}
    map.addSource('rt',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
    map.addLayer({id:'rt',type:'line',source:'rt',paint:{'line-color':o.accent||'#d33','line-width':4,'line-dasharray':[1.5,1.5]}});
-   ready=true;draw();fit();if(sel>=0)select(sel);
+   ready=true;applyLab();draw();fit();if(sel>=0)select(sel);
   });
   map.on('zoomend',draw);map.on('moveend',draw);
   map.on('click',()=>o.onPick&&o.onPick(-1));
@@ -411,7 +413,7 @@ const OMap=(()=>{
    map.flyTo({center:ll,zoom:16});
   },fail,{enableHighAccuracy:true,timeout:8000});
  }
- return{init,fit,select,refresh:()=>draw(),zoom:d=>map&&map.easeTo({zoom:map.getZoom()+d}),locate,setFilter:c=>{flt=c;draw()},resize:()=>map&&map.resize(),get ready(){return ready},get map(){return map},get sel(){return sel}};
+ return{init,fit,select,refresh:()=>draw(),zoom:d=>map&&map.easeTo({zoom:map.getZoom()+d}),locate,setFilter:c=>{flt=c;draw()},setLabels:on=>{lab=!!on;applyLab()},get labels(){return lab},resize:()=>map&&map.resize(),get ready(){return ready},get map(){return map},get sel(){return sel}};
 })();
 
 /* 아래 서랍: 손가락으로 끌어 올리고 내리기 */
@@ -633,9 +635,12 @@ function pick(i,fromRail){
  if(i>=0&&e&&!fromRail){scrolling=true;e.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});setTimeout(()=>scrolling=false,600)}
  OMap.select(i);
 }
+function labSet(on,keep){OMap.setLabels(on);const b=$('#bLab');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);if(!keep)store.set('maplabels',on?1:0)}
 function mapOpen(){
  if(!railBuilt){railBuilt=true;railHTML();bindRail();
   OMap.init({el:'map',accent:'#0E9AA7',drawerH:()=>150,onPick:i=>{if(i>=0)pick(i)},toast:gtoast,simple:true,noLine:true,road:'#ffffff'});
+  labSet(!!store.get('maplabels',0),1);
+  $('#bLab').onclick=()=>labSet(!OMap.labels);
   $('#bLoc').onclick=OMap.locate;$('#bAll').onclick=()=>OMap.fit(true);$('#bIn').onclick=()=>OMap.zoom(1);$('#bOut').onclick=()=>OMap.zoom(-1);
   $('#bAdd').onclick=()=>openSheet(null,{});
   pick(0);
@@ -773,13 +778,14 @@ function delPlace(){
  savePlaces();closeSheet();afterChange(null);gtoast('지웠어요');
 }
 /* 지도에서 직접 고르기 */
+let prevLab=false;
 function startPick(){
- closeSheet();picking=true;prevTab=tab;
+ closeSheet();picking=true;prevTab=tab;prevLab=OMap.labels;if(!prevLab)labSet(true,1);
  $('#ms').classList.add('picking');$('#mtop').innerHTML='📍 지도를 움직여 핀을 맞춰요';
  go(1);
  setTimeout(()=>{if(OMap.ready&&draft&&draft.lat!=null)OMap.map.jumpTo({center:[draft.lng,draft.lat],zoom:16})},900);
 }
-function endPick(){picking=false;$('#ms').classList.remove('picking');$('#mtop').innerHTML='🗺️ 오사카 <small>대략적인 위치예요</small>';go(prevTab);showSheet()}
+function endPick(){picking=false;if(!prevLab)labSet(false,1);$('#ms').classList.remove('picking');$('#mtop').innerHTML='🗺️ 오사카 <small>대략적인 위치예요</small>';go(prevTab);showSheet()}
 function pickOk(){if(OMap.ready){const c=OMap.map.getCenter();draft.lat=c.lat;draft.lng=c.lng}endPick();gtoast('위치를 정했어요')}
 function pickNo(){endPick()}
 
