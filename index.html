@@ -188,7 +188,7 @@ textarea{resize:vertical;line-height:1.5}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
 .opts button{background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:800;min-height:46px;font-size:16px}
 .opts button.on{background:var(--sea);color:#fff;border-color:var(--sea)}
-.kc{display:inline-flex;align-items:stretch}.kc .kx{min-height:46px;padding:0 10px;margin-left:-6px;border-radius:0 12px 12px 0;font-size:14px;color:var(--mute,#888)}.kc .kx:hover{background:var(--line)}.opts .kadd{border-style:dashed}.kmk{display:flex;gap:8px;margin-top:8px}.kmk input{min-width:0;border:2px solid var(--line);border-radius:12px;padding:8px 10px;font:inherit;font-size:16px;background:var(--bg)}.kmk input:first-child{width:64px;text-align:center;font-size:22px}.kmk input:nth-child(2){flex:1}
+.kc{display:inline-flex;align-items:stretch}.kc .kx{min-height:46px;padding:0 10px;margin-left:-6px;border-radius:0 12px 12px 0;font-size:14px;color:var(--mute,#888)}.kc .kx:hover{background:var(--line)}.opts .kadd{border-style:dashed}.kmk{display:flex;gap:8px;margin-top:8px}.kmk input{min-width:0;border:2px solid var(--line);border-radius:12px;padding:8px 10px;font:inherit;font-size:16px;background:var(--bg)}.kem{width:64px;min-height:46px;border:2px solid var(--line);border-radius:12px;background:var(--bg);font-size:24px}.kmk input{flex:1}.kpk{margin-top:8px;border:2px solid var(--line);border-radius:12px;padding:8px;max-height:220px;overflow:auto;background:var(--bg)}.kg small{display:block;font-weight:800;margin:4px 2px}.kg>div{display:flex;flex-wrap:wrap;gap:2px}.kg button{width:44px;height:44px;font-size:24px;background:none;border:0;border-radius:10px}.kg button:hover,.kg button:active{background:var(--line)}
 :root[data-theme=dark] .opts button.on{color:#06222a}
 
 /* 장소 시트 / 전체 화면 보여주기 */
@@ -664,6 +664,8 @@ function dr(k,v,re){
  if(k==='c'){const kd=KINDS.find(x=>x[0]===v);if(kd)draft.i=kd[1]}
  if(re)renderSheet();
 }
+const EMO=[['음식·카페','🍜🍣🍱🍙🍢🍤🥟🍛🍰🧁☕🍵🍺🍡🍦🥩'],['쇼핑','🛍👜👕👟🎁💄🧸📚🖊💊🧴🎮'],['이동·숙소','🚆🚌🚕🚶🚲✈🏨🛏♨⛩'],['구경·놀이','✨🏯🎡🎢🌸🍁🌃🎆📷🎨🎭🛕'],['기타','⭐❤🔥💰🎵🏪🧾📍🅿🚻🏧']];
+function kindEmo(e){draft._ke=e;draft._kp=false;renderSheet()}
 function kindAdd(){
  const e=(draft._ke||'').trim(),n=(draft._kn||'').trim().slice(0,6);
  if(!e){gtoast('이모티콘을 하나 넣어 주세요');return}
@@ -689,7 +691,7 @@ function renderSheet(){
  $('#sheet').innerHTML=`<div class="scrim" onclick="closeSheet()"></div><div class="panel" id="shp"><div class="ph2"><b>${d._edit?'장소 고치기':'가고 싶은 곳 추가'}</b><button class="x" onclick="closeSheet()" aria-label="닫기">✕</button></div>
  <label class="fl"><span>이름</span><input id="sn" value="${esc(d.n)}" oninput="dr('n',this.value)" placeholder="예: 모리타 만년필" maxlength="40"></label>
  <div class="fl"><span>어떤 곳이에요?</span><div class="opts">${KINDS.map(k=>`<span class="kc"><button class="${d.c===k[0]?'on':''}" onclick="dr('c','${k[0]}',1)">${esc(k[1])} ${esc(k[2])}</button>${/^k\d/.test(k[0])?`<button class="kx" onclick="kindDel('${k[0]}')" aria-label="${esc(k[2])} 지우기">✕</button>`:''}</span>`).join('')}${(INFO.kinds||[]).length<8?`<button class="kadd" onclick="draft._mk=!draft._mk;renderSheet()">＋ 직접 만들기</button>`:''}</div>
-  ${d._mk?`<div class="kmk"><input id="kme" value="${esc(d._ke||'')}" oninput="draft._ke=this.value" placeholder="😀" maxlength="4" aria-label="이모티콘"><input id="kmn" value="${esc(d._kn||'')}" oninput="draft._kn=this.value" placeholder="이름 (6글자까지)" maxlength="6" aria-label="종류 이름"><button class="btn" onclick="kindAdd()">추가</button></div><p class="hint">이모티콘 키보드로 하나 골라 넣고, 이름을 적어요.</p>`:''}</div>
+  ${d._mk?`<div class="kmk"><button class="kem" onclick="draft._kp=!draft._kp;renderSheet()" aria-label="이모티콘 고르기">${esc(d._ke||'😀')}</button><input id="kmn" value="${esc(d._kn||'')}" oninput="draft._kn=this.value" placeholder="이름 (6글자까지)" maxlength="6" aria-label="종류 이름"><button class="btn" onclick="kindAdd()">추가</button></div>${d._kp?`<div class="kpk">${EMO.map(g=>`<div class="kg"><small>${g[0]}</small><div>${[...g[1]].map(e=>`<button onclick="kindEmo('${e}')">${e}</button>`).join('')}</div></div>`).join('')}</div>`:'<p class="hint">😀 칸을 눌러 이모티콘을 골라요.</p>'}`:''}</div>
  <div class="fl"><span>위치 (지도에 표시하려면)</span>
   <div class="srch"><input id="sq" placeholder="가게·건물 이름으로 찾기" onkeydown="if(event.key==='Enter')doSearch()"><button class="btn" onclick="doSearch()">찾기</button></div>
   <div id="sres"></div>
