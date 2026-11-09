@@ -145,6 +145,7 @@ body.mapmode #ms{display:block}
 .pcard .t2 .btn{padding:10px 12px;font-size:15px}
 .pcard .t2 .btn:first-of-type{margin-left:auto}
 .pcard .t2 .btn{white-space:nowrap}
+#offbar{display:none;position:fixed;top:0;left:0;right:0;z-index:60;background:#2B2B2B;color:#fff;font-size:13.5px;text-align:center;padding:calc(5px + env(safe-area-inset-top)) 8px 5px}
 .pcard .t3{display:flex;gap:8px;margin-top:8px}
 .pcard .t3 .btn{flex:1;padding:9px 8px;font-size:14px;white-space:nowrap}
 .pcard .t3 .dg{flex:none;color:#C0392B;border-color:#E6B8B2}
@@ -313,6 +314,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
 <section class="pane" id="p4">
   <h2 class="sec" style="margin-top:4px">내 정보</h2>
   <p style="font-size:15px;color:var(--sub);margin:-4px 2px 14px">여기에 적은 내용은 <b>이 폰 안에만</b> 저장돼요. 서버에 올라가지 않아요.</p>
+  <div id="offc"></div>
   <div id="info"></div>
   <div class="ft"></div>
 </section>
@@ -335,6 +337,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <div class="rail" id="rail"></div>
 </div>
 
+<div id="offbar">📴 인터넷이 없어요 · 저장된 내용으로 보여 드려요</div>
 <div id="sheet"></div>
 <div id="ov"><div class="inner" id="ovin"></div></div>
 <div id="gt"></div>
@@ -1199,13 +1202,55 @@ window.addEventListener('online',()=>syncNow());
 setInterval(()=>{if(!document.hidden)syncNow()},90000);
 setTimeout(()=>syncNow(),1500);
 
+
+/* ---------- 오프라인 준비 ---------- */
+function offCard(){
+ const t=store.get('off',null);
+ $('#offc').innerHTML=`<div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📴 인터넷 없이 쓰기</b><p class="hint" style="margin:6px 0 10px">와이파이일 때 한 번 눌러 두면, 일본에서 데이터가 없어도 일정·회화·가계부와 오사카 지도(큰 길·역 이름)가 열려요. 약 10MB예요.</p><button class="btn big" style="width:100%" id="offb" onclick="offPrep()">지도 미리 받기</button><p class="hint" id="offs" style="margin:8px 0 0">${t?'✅ '+esc(t.d)+' 받아 둠 ('+t.mb+'MB)':'아직 안 받았어요'}</p><p class="hint" style="margin:8px 0 0">💡 길 안내까지 필요하면 구글 지도 앱에서 오사카를 <b>오프라인 지도</b>로 저장해 두세요.</p></div>`;
+}
+let offBusy=false;
+async function offPrep(){
+ if(offBusy)return;
+ if(!navigator.onLine){gtoast('인터넷이 연결됐을 때 눌러 주세요');return}
+ offBusy=true;const st=$('#offs'),bt=$('#offb');bt.disabled=true;st.textContent='준비 중이에요…';
+ try{
+  const J=u=>fetch(u).then(r=>{if(!r.ok)throw 0;return r.json()});
+  const sty=await J('https://tiles.openfreemap.org/styles/liberty');
+  const src=Object.values(sty.sources).find(x=>x.url);
+  const tj=await J(src.url);
+  const urls=[];
+  const pts=PLACES.filter(p=>p.lat!=null),la=pts.map(p=>p.lat),ln=pts.map(p=>p.lng);
+  const b={s:Math.min(...la,34.66)-.03,n:Math.max(...la,34.71)+.03,w:Math.min(...ln,135.49)-.03,e:Math.max(...ln,135.52)+.03};
+  const tx=(g,z)=>Math.floor((g+180)/360*2**z),ty=(a,z)=>{const r=a*Math.PI/180;return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*2**z)};
+  const zmax=Math.min(14,tj.maxzoom||14);
+  for(let z=6;z<=zmax;z++)for(let x=tx(b.w,z);x<=tx(b.e,z);x++)for(let y=ty(b.n,z);y<=ty(b.s,z);y++)urls.push(tj.tiles[0].replace('{z}',z).replace('{x}',x).replace('{y}',y));
+  const fonts=[...new Set((sty.layers||[]).map(l=>l.layout&&l.layout['text-font']).filter(Array.isArray).map(f=>f.join(',')))].filter(f=>/Regular/.test(f)).slice(0,1);
+  const rg=[[0,255],[12288,12543]];for(let a=19968;a<40960;a+=256)rg.push([a,a+255]);
+  if(sty.glyphs)fonts.forEach(f=>rg.forEach(r=>urls.push(sty.glyphs.replace('{fontstack}',encodeURIComponent(f)).replace('{range}',r[0]+'-'+r[1]))));
+  if(sty.sprite)['.json','.png','@2x.json','@2x.png'].forEach(x=>urls.push(sty.sprite+x));
+  let done=0,fail=0,bytes=0;
+  const q=urls.slice();
+  await Promise.all(Array.from({length:8},async()=>{
+   while(q.length){const u=q.shift();
+    try{const r=await fetch(u);if(!r.ok)throw 0;bytes+=(await r.arrayBuffer()).byteLength}catch(e){fail++}
+    done++;if(done%10===0)st.textContent='받는 중… '+Math.round(done/urls.length*100)+'%'}
+  }));
+  const d=new Date();
+  store.set('off',{d:(d.getMonth()+1)+'/'+d.getDate(),mb:Math.round(bytes/1048576*10)/10});
+  gtoast(fail>urls.length*.3?'일부만 받았어요. 와이파이에서 다시 눌러 주세요':'지도를 받아 뒀어요');
+ }catch(e){gtoast('받지 못했어요. 인터넷을 확인해 주세요')}
+ offBusy=false;offCard();
+}
+function netBar(){$('#offbar').style.display=navigator.onLine?'none':'block'}
+window.addEventListener('online',netBar);window.addEventListener('offline',netBar);
+
 /* ---------- 시작 ---------- */
 const FOOT='<footer class="aklabs-foot"><b>AKLABS</b><div><a href="https://classlog-ai.vercel.app/" target="_blank" rel="noopener">클래스로그AI</a><a href="https://ai-service-hub.vercel.app/" target="_blank" rel="noopener">아크의 실험실</a></div></footer>';
 document.querySelectorAll('.ft').forEach(e=>e.innerHTML=FOOT);
 function applyTheme(d){const r=document.documentElement;if(d)r.dataset.theme='dark';else delete r.dataset.theme;$('#mode').textContent=d?'밝게':'어둡게';store.set('theme',d?'dark':'')}
 $('#mode').onclick=()=>applyTheme(document.documentElement.dataset.theme!=='dark');
 applyTheme(store.get('theme','')==='dark');
-$('#guide').innerHTML=guideHTML();vwHTML();infoHTML();dd();days();render();exkHTML();money();
+$('#guide').innerHTML=guideHTML();vwHTML();infoHTML();offCard();netBar();dd();days();render();exkHTML();money();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
