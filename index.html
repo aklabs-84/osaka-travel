@@ -346,6 +346,12 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <h2 class="sec" style="margin-top:4px">내 정보</h2>
   <p style="font-size:15px;color:var(--sub);margin:-4px 2px 14px">여기에 적은 내용은 <b>이 폰 안에만</b> 저장돼요. 서버에 올라가지 않아요.</p>
   <div id="offc"></div>
+  <div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📥 구글 지도에서 장소 한꺼번에 가져오기</b>
+   <p class="hint" style="margin:6px 0 10px">구글 지도에 모아 둔 장소를 파일로 받아 여기서 열면, 한 번에 목록에 넣을 수 있어요. 넣기 전에 골라 볼 수 있어요.</p>
+   <label class="btn" style="cursor:pointer">📂 파일 고르기<input type="file" id="impf" accept=".kml,.json,.geojson,.csv,.txt" style="display:none" onchange="impPick(this)"></label>
+   <details style="margin-top:10px"><summary style="font-weight:800;font-size:15.5px;cursor:pointer">파일은 어떻게 받아요?</summary>
+    <div class="hint" style="line-height:1.7"><b>① 내 지도(My Maps)</b> — 구글 지도 ▸ 저장됨 ▸ 지도 탭에서 만든 지도를 열고, ⋮ ▸ <b>KML/KMZ로 내보내기</b> ▸ “전체 지도” ▸ <b>KMZ 대신 .KML 파일로 내보내기</b>를 체크해 받아요. 위치가 정확해서 가장 좋아요.<br><b>② 저장한 장소 목록</b> — 구글 테이크아웃(takeout.google.com)에서 “저장됨(Saved)”만 골라 내려받아, 안의 <b>.csv 또는 .json</b> 파일을 열어요. csv는 이름으로 위치를 찾느라 조금 느려요.<br>아내 폰의 「저장됨」은 아내가 위 방법으로 파일을 받아 보내 주면 돼요.</div></details>
+  </div>
   <div id="info"></div>
   <div class="ft"></div>
 </section>
@@ -1285,6 +1291,87 @@ setTimeout(()=>syncNow(),1500);
 
 
 /* ---------- 오프라인 준비 ---------- */
+/* ---------- 구글 지도 파일 가져오기 (KML·GeoJSON·CSV) ---------- */
+let IMP=[],impKind='do';
+function csvRows(t){const r=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);f='';if(row.some(x=>x.trim()))r.push(row);row=[]}else f+=c}row.push(f);if(row.some(x=>x.trim()))r.push(row);return r}
+function impParse(name,t){
+ const out=[];t=t.replace(/^\uFEFF/,'');
+ if(/\.kml$/i.test(name)||/^\s*<\?xml|<kml/i.test(t.slice(0,300))){
+  const x=new DOMParser().parseFromString(t,'text/xml');
+  x.querySelectorAll('Placemark').forEach(pm=>{
+   const c=pm.querySelector('Point coordinates');if(!c)return;
+   const [lng,lat]=c.textContent.trim().split(',').map(Number);
+   const nm=(pm.querySelector('name')||{}).textContent||'';
+   const f=pm.parentElement&&pm.parentElement.tagName==='Folder'?((pm.parentElement.querySelector('name')||{}).textContent||''):'';
+   const ds=((pm.querySelector('description')||{}).textContent||'').replace(/<[^>]*>/g,' ').trim();
+   out.push({n:nm.trim(),lat,lng,memo:[f.trim(),ds].filter(Boolean).join(' · ').slice(0,80)});
+  });
+ }else if(/\.csv$/i.test(name)){
+  const R=csvRows(t),h=R.shift().map(x=>x.trim().toLowerCase());
+  const ix=k=>h.findIndex(x=>k.includes(x));
+  const it=ix(['title','제목','name','이름']),iu=ix(['url']),inn=ix(['note','메모','comment','설명']);
+  R.forEach(r=>{const n=(r[it]||'').trim();if(!n)return;const g=parseGmap(r[iu]||'');out.push({n,lat:g.lat,lng:g.lng,memo:(r[inn]||'').trim().slice(0,80),url:(r[iu]||'').trim()})});
+ }else{
+  const j=JSON.parse(t);
+  (j.features||[]).forEach(f=>{
+   const p=f.properties||{},L=p.Location||p.location||{},gc=L['Geo Coordinates']||{};
+   let lat=null,lng=null;const co=f.geometry&&f.geometry.coordinates;
+   if(co&&(co[0]||co[1])){lng=+co[0];lat=+co[1]}
+   else if(gc.Latitude&&(+gc.Latitude||+gc.Longitude)){lat=+gc.Latitude;lng=+gc.Longitude}
+   const u=p['Google Maps URL']||p.google_maps_url||'';
+   if(lat==null){const g=parseGmap(u);lat=g.lat;lng=g.lng}
+   const n=(p.Title||p.title||p.name||L['Business Name']||'').trim();
+   if(n)out.push({n,lat,lng,memo:(p.Comment||p.comment||L.Address||'').toString().slice(0,80),url:u});
+  });
+ }
+ return out;
+}
+function impPick(el){
+ const f=el.files[0];el.value='';if(!f)return;
+ if(f.size>3e6){gtoast('파일이 너무 커요 (3MB까지)');return}
+ const r=new FileReader();
+ r.onload=()=>{
+  let L=[];
+  try{L=impParse(f.name,r.result)}catch(e){gtoast('파일을 읽지 못했어요. KML·csv·json 파일이 맞는지 봐 주세요');return}
+  if(/\.kmz$/i.test(f.name))L=[];
+  L=L.filter(x=>x.n).slice(0,80);
+  const have=PLACES.map(p=>p);
+  IMP=L.map(x=>{
+   const dup=have.some(p=>p.n.trim().toLowerCase()===x.n.toLowerCase()||(x.lat!=null&&p.lat!=null&&Math.abs(p.lat-x.lat)<3e-4&&Math.abs(p.lng-x.lng)<3e-4));
+   const far=x.lat!=null&&!(x.lat>33&&x.lat<36.5&&x.lng>134&&x.lng<137.5);
+   return Object.assign(x,{dup,far,on:!dup&&!far});
+  });
+  if(!IMP.length){gtoast('가져올 장소가 없어요. KMZ라면 .KML로 다시 내보내 주세요');return}
+  impOv();
+ };
+ r.readAsText(f);
+}
+function impOv(msg){
+ const n=IMP.filter(x=>x.on).length,noLoc=IMP.filter(x=>x.on&&x.lat==null).length;
+ openOv(`<div class="ph2"><b>📥 가져올 장소 고르기</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="phr"><b>이 장소들은 어떤 종류로 넣을까요?</b><div class="opts" style="margin-top:8px">${KINDS.map(k=>`<button class="${impKind===k[0]?'on':''}" onclick="impKind='${k[0]}';impOv()">${k[1]} ${k[2]}</button>`).join('')}</div></div>
+ <div class="phr"><b>${IMP.length}곳 찾았어요 · ${n}곳 선택됨</b>${IMP.map((x,k)=>`<label class="rcl" style="align-items:center;cursor:pointer"><span style="flex:1;min-width:0"><input type="checkbox" ${x.on?'checked':''} onchange="IMP[${k}].on=this.checked;impOv()" style="width:22px;height:22px;vertical-align:middle;margin-right:8px">${esc(x.n)}${x.dup?' <small>(이미 있어요)</small>':''}${x.far?' <small>(오사카에서 멀어요)</small>':''}${x.lat==null?' <small>(위치는 이름으로 찾아요)</small>':''}</span></label>`).join('')}</div>
+ ${noLoc?`<p class="hint">위치가 없는 ${noLoc}곳은 이름으로 찾느라 ${noLoc}초쯤 걸리고, 못 찾으면 “위치 확인 필요”로 들어가요.</p>`:''}
+ <button class="btn big" id="impgo" ${n?'':'disabled'} onclick="impGo()">${n}곳 목록에 넣기</button>`);
+}
+async function impGo(){
+ const sel=IMP.filter(x=>x.on);if(!sel.length)return;
+ const b=$('#impgo');b.disabled=true;
+ const kd=KINDS.find(k=>k[0]===impKind)||KINDS[0],now=Date.now();let k=0,miss=0;
+ for(const x of sel){
+  b.textContent='넣는 중… '+(k+1)+'/'+sel.length;
+  let chk=0;
+  if(x.lat==null){
+   try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ko&countrycodes=jp&viewbox=135.35,34.80,135.65,34.55&q='+encodeURIComponent(x.n));const j=await r.json();if(j[0]){x.lat=+j[0].lat;x.lng=+j[0].lon;chk=1}}catch(e){}
+   await new Promise(r=>setTimeout(r,1100));
+  }
+  if(x.lat==null){chk=1;miss++}
+  PLACES.push({id:'u'+now+'_'+k,n:x.n.slice(0,40),s:x.n.slice(0,10),c:kd[0],i:kd[1],lat:x.lat==null?null:x.lat,lng:x.lng==null?null:x.lng,memo:x.memo||'',link:/^https?:/i.test(x.url||'')?x.url:'',tax:'',day:'',slot:'',d:'',al:'',ex:'',L:'',code:'',home:0,o:twoOn()?WHO.me:'',chk});
+  k++;
+ }
+ savePlaces();closeOv();afterChange();
+ gtoast(sel.length+'곳을 넣었어요'+(miss?' (위치 못 찾은 '+miss+'곳은 “위치 확인 필요”)':''));
+}
 function offCard(){
  const t=store.get('off',null);
  $('#offc').innerHTML=`<div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📴 인터넷 없이 쓰기</b><p class="hint" style="margin:6px 0 10px">와이파이일 때 한 번 눌러 두면, 일본에서 데이터가 없어도 일정·회화·가계부와 오사카 지도(큰 길·역 이름)가 열려요. 약 10MB예요.</p><button class="btn big" style="width:100%" id="offb" onclick="offPrep()">지도 미리 받기</button><p class="hint" id="offs" style="margin:8px 0 0">${t?'✅ '+esc(t.d)+' 받아 둠 ('+t.mb+'MB)':'아직 안 받았어요'}</p><p class="hint" style="margin:8px 0 0">💡 길 안내까지 필요하면 구글 지도 앱에서 오사카를 <b>오프라인 지도</b>로 저장해 두세요.</p></div>`;
