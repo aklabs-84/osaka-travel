@@ -61,6 +61,8 @@ h2.sec{font-family:var(--font-head);font-weight:400;font-size:22px;margin:22px 2
 .mi .mx{flex:none;margin-left:auto;display:flex;gap:4px}
 .mi .mx button{font:inherit;font-size:16px;min-width:40px;min-height:40px;border-radius:10px;background:transparent;color:var(--sub);border:0;cursor:pointer}
 .mi .mx button:hover{background:var(--line)}
+.fh{display:flex;align-items:center;gap:10px}.fh span{flex:1;min-width:0}.fold{font:inherit;font-weight:800;font-size:14px;color:var(--sub);background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;min-height:40px;cursor:pointer;white-space:nowrap}.fold i{font-style:normal;display:inline-block;transition:transform .2s;margin-left:4px}.fold.shut i{transform:rotate(180deg)}
+.mtabs{display:flex;gap:6px;margin:8px 0 4px}.mtabs button{flex:1;font:inherit;font-weight:800;font-size:16px;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--sub);cursor:pointer}.mtabs button.on{background:var(--sea2);border-color:var(--sea2);color:#fff}
 .dnh{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:12px 4px;font:inherit;font-weight:800;font-size:16px;background:transparent;color:var(--sub);border:0;border-top:1px solid var(--line);cursor:pointer;text-align:left}
 .dnh i{margin-left:auto;font-style:normal;transition:transform .2s}.dnh.open i{transform:rotate(180deg)}
 .mtadd{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
@@ -262,11 +264,11 @@ nav.tabs button.on:after{transform:scaleX(1)}
 
 <section class="pane on" id="p0">
   <div class="vw" id="vw0"></div>
-  <h2 class="sec" id="mh">꼭 해야 하는 일</h2>
+  <h2 class="sec fh"><span id="mh">꼭 해야 하는 일</span><button class="fold" id="mf" onclick="foldTog('m')"></button></h2>
   <div class="must" id="must"></div>
   <div id="mtadd"></div>
   <div id="nudge"></div>
-  <h2 class="sec" id="th">오늘의 길</h2>
+  <h2 class="sec fh" id="thw"><span id="th">오늘의 길</span><button class="fold" id="tf" onclick="foldTog('t')"></button></h2>
   <div class="tl" id="tl"></div>
   <div id="un"></div>
   <div class="ft"></div>
@@ -628,7 +630,7 @@ function unHTML(d){
 }
 function assign(id,dk,slot){const p=PLACES.find(x=>x.id===id);p.day=dk;p.slot=slot;savePlaces();render();gtoast('일정에 넣었어요')}
 /* 직접 만든 할 일: INFO.todos=[[아이디,글,날짜칸(pre/d0/d1/d2)],…] (정보와 함께 같이 쓰기로 동기화) */
-let mtEdit=null,mtOpen=false,dnOpen=!!store.get('dnopen',0);
+let mtEdit=null,mtOpen=false,mTab=store.get('mtab','op')==='dn'?'dn':'op',FOLD={m:!!store.get('mfold',0),t:!!store.get('tfold',0)};
 const myTodos=()=>Array.isArray(INFO.todos)?INFO.todos:[];
 function todoItem(t,mine){
  return `<div class="mi ${done.has(t.id)?'done':''}" id="${t.id}"><button class="box" onclick="chk('${t.id}')" aria-label="완료 체크" aria-pressed="${done.has(t.id)}">✓</button><div style="flex:1;min-width:0"><b>${esc(t.t)}</b>${t.w?`<span class="w">${t.w}</span>`:''}${t.g?`<button class="go" onclick="toGuide('${t.g}')">자세히 보기 →</button>`:''}</div>${mine?`<div class="mx"><button onclick="mtStart('${t.id}')" aria-label="고치기">✎</button><button onclick="mtDel('${t.id}')" aria-label="지우기">✕</button></div>`:''}</div>`;
@@ -639,12 +641,17 @@ function mustRender(){
  const mine=myTodos().filter(m=>m[2]===d.k).map(m=>({id:m[0],t:m[1]}));
  const items=base.map(t=>({t,m:false})).concat(mine.map(t=>({t,m:true})));
  const op=items.filter(o=>!done.has(o.t.id)),dn=items.filter(o=>done.has(o.t.id));
- $('#must').innerHTML=(op.length?op.map(o=>todoItem(o.t,o.m)).join(''):`<div class="empty">${items.length?'할 일을 모두 끝냈어요! 🎉':'이날은 꼭 해야 하는 일이 없어요. 마음 편히 돌아다니세요 😊'}</div>`)
-  +(dn.length?`<button class="dnh ${dnOpen?'open':''}" onclick="dnTog()" aria-expanded="${dnOpen}">✅ 완료한 일 (${dn.length})<i>▼</i></button>${dnOpen?dn.map(o=>todoItem(o.t,o.m)).join(''):''}`:'');
+ const list=mTab==='dn'?dn:op;
+ const emp=mTab==='dn'?'아직 끝낸 일이 없어요':(items.length?'할 일을 모두 끝냈어요! 🎉':'이날은 꼭 해야 하는 일이 없어요. 마음 편히 돌아다니세요 😊');
+ $('#must').style.display=FOLD.m?'none':'';
+ $('#must').innerHTML=`<div class="mtabs" role="tablist"><button role="tab" class="${mTab==='op'?'on':''}" aria-selected="${mTab==='op'}" onclick="mtab('op')">할 일 (${op.length})</button><button role="tab" class="${mTab==='dn'?'on':''}" aria-selected="${mTab==='dn'}" onclick="mtab('dn')">✅ 완료 (${dn.length})</button></div>`+(list.length?list.map(o=>todoItem(o.t,o.m)).join(''):`<div class="empty">${emp}</div>`);
+ foldBtn('m',`남은 ${op.length}개`);
  $('#mtadd').innerHTML=mtOpen?`<div class="mtadd"><input id="mti" maxlength="40" placeholder="예: 환전하기" value="${esc(mtEdit?(myTodos().find(m=>m[0]===mtEdit)||[])[1]||'':'')}" onkeydown="if(event.key==='Enter')mtSave()" aria-label="할 일 내용"><button class="btn" onclick="mtSave()">${mtEdit?'저장':'추가'}</button><button class="btn ln" onclick="mtClose()">취소</button></div>`:`<button class="btn big" style="width:100%;margin-top:12px" onclick="mtStart()">＋ 할 일 추가</button>`;
  if(mtOpen){const i=$('#mti');if(i&&document.activeElement!==i)i.focus()}
 }
-function dnTog(){dnOpen=!dnOpen;store.set('dnopen',dnOpen?1:0);mustRender()}
+function mtab(v){mTab=v;store.set('mtab',v);mustRender()}
+function foldBtn(k,lab){const b=$('#'+k+'f');b.className='fold'+(FOLD[k]?' shut':'');b.setAttribute('aria-expanded',!FOLD[k]);b.innerHTML=(FOLD[k]?lab+' 펼치기':'접기')+'<i>▲</i>'}
+function foldTog(k){FOLD[k]=!FOLD[k];store.set(k==='m'?'mfold':'tfold',FOLD[k]?1:0);render()}
 function mtStart(id){mtEdit=id||null;mtOpen=true;mustRender()}
 function mtClose(){mtOpen=false;mtEdit=null;mustRender()}
 function mtSave(){
@@ -666,8 +673,9 @@ function render(){
  const need=!INFO.fOutNo&&!INFO.fOutTerm;
  $('#nudge').innerHTML=(d.k==='pre'&&need)?`<button class="nudge" onclick="go(4)">✈️ 항공권 정보를 적어 둘까요?<small>편명과 도착 터미널을 적으면 공항 안내가 맞춰져요</small></button>`:'';
  const has=d.k!=='pre';
- $('#th').textContent=has?d.hero:'';$('#th').style.display=has?'':'none';
- $('#tl').style.display=has?'':'none';
+ $('#th').textContent=has?d.hero:'';$('#thw').style.display=has?'':'none';
+ foldBtn('t','경로');
+ $('#tl').style.display=has&&!FOLD.t?'':'none';
  $('#tl').innerHTML=has?tlHTML(d):'';
  $('#un').innerHTML=unHTML(d);
  reveal();
