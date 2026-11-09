@@ -292,6 +292,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <h2 class="sec fh"><span id="mh">꼭 해야 하는 일</span><button class="fold" id="mf" onclick="foldTog('m')"></button></h2>
   <div class="must" id="must"></div>
   <div id="mtadd"></div>
+  <div id="pk"></div>
   <div id="nudge"></div>
   <h2 class="sec fh" id="thw"><span id="th">오늘의 길</span><button class="fold" id="tf" onclick="foldTog('t')"></button></h2>
   <div class="tl" id="tl"></div>
@@ -708,6 +709,20 @@ function nextHTML(){
  return `<div class="nx"><small>다음에 갈 곳 ${dn.length+1}/${L.length}${sl?' · '+sl:''}</small><div class="nxt"><span class="ic ${PC[p.c]||'pc-do'}">${esc(p.i)}</span><div><b>${esc(p.n)}</b><span>${distText(p)}${p.chk?' · 위치는 어림':''}</span></div></div><div class="nxb"><a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">길찾기 ↗</a>${p.lat!=null?`<button class="btn ln" onclick="showOnMap(${nx.i})">🗺 지도</button>`:''}<button class="btn ln" onclick="visit('${p.id}',1)">✔ 다녀왔어요</button></div>${undo}</div>`;
 }
 function visit(id,v){const p=PLACES.find(x=>x.id===id);if(!p)return;p.v=v?1:0;savePlaces();render();gtoast(v?'다녀왔어요 체크!':'되돌렸어요')}
+/* 짐 체크리스트: INFO.pack=[[아이디,글,챙김0/1],…] (없으면 기본 목록). 정보와 함께 같이 쓰기로 동기화 */
+const PACK0=['여권(유효기간 확인)','항공권·e티켓 캡처','비지트 재팬 QR 캡처','엔화 현금','해외 결제되는 카드','휴대폰·충전기','보조배터리 (기내에 들고 타요)','일본용 플러그(돼지코)','인터넷(eSIM·유심·와이파이)','두꺼운 외투 (12월 오사카는 5~12도)','장갑·목도리','편한 신발','우산','상비약·밴드','양말·속옷 여벌','에코백 (쇼핑용)'];
+const packList=()=>Array.isArray(INFO.pack)?INFO.pack:PACK0.map((t,i)=>['k'+i,t,0]);
+function packSave(a){INFO.pack=a;store.set('info',INFO);pkList()}
+function pkTog(id){packSave(packList().map(m=>m[0]===id?[m[0],m[1],m[2]?0:1]:m))}
+function pkDel(id){if(!confirm('이 물건을 목록에서 지울까요?'))return;packSave(packList().filter(m=>m[0]!==id))}
+function pkAdd(){const i=$('#pki'),v=(i.value||'').trim().slice(0,30);if(!v){gtoast('챙길 물건을 적어 주세요');return}const a=packList().slice();if(a.length>=80){gtoast('80개까지 넣을 수 있어요');return}a.push(['p'+Date.now(),v,0]);i.value='';packSave(a);i.focus()}
+function pkReset(){if(!confirm('체크를 모두 풀까요? (목록은 그대로예요)'))return;packSave(packList().map(m=>[m[0],m[1],0]))}
+function pkList(){
+ const a=packList(),n=a.filter(m=>m[2]).length;
+ $('#pkc').textContent=n+'/'+a.length+' 챙겼어요';
+ $('#pkl').innerHTML=a.map(m=>`<div class="mi ${m[2]?'done':''}"><button class="box" onclick="pkTog('${m[0]}')" aria-label="챙김 체크" aria-pressed="${!!m[2]}">✓</button><div style="flex:1;min-width:0"><b>${esc(m[1])}</b></div><div class="mx"><button onclick="pkDel('${m[0]}')" aria-label="지우기">🗑️</button></div></div>`).join('');
+}
+function pkHTML(){return `<h2 class="sec" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">🎒 짐 챙기기<small id="pkc" style="font-size:15px;color:var(--sub);font-weight:700"></small></h2><div class="must" id="pkl"></div><div class="mtadd"><input id="pki" maxlength="30" placeholder="예: 카메라" onkeydown="if(event.key==='Enter')pkAdd()" aria-label="챙길 물건"><button class="btn" onclick="pkAdd()">추가</button><button class="btn ln" onclick="pkReset()">체크 모두 풀기</button></div>`}
 function mtab(v){mTab=v;store.set('mtab',v);mustRender()}
 function foldBtn(k,lab){const b=$('#'+k+'f');b.className='fold'+(FOLD[k]?' shut':'');b.setAttribute('aria-expanded',!FOLD[k]);b.innerHTML=(FOLD[k]?lab+' 펼치기':'접기')+'<i>▲</i>'}
 function foldTog(k){FOLD[k]=!FOLD[k];store.set(k==='m'?'mfold':'tfold',FOLD[k]?1:0);render()}
@@ -730,6 +745,7 @@ function render(){
  $('#mh').textContent=d.k==='pre'?'꼭 해야 하는 일':'이날 꼭 할 일';
  $('#nx').innerHTML=nextHTML();
  mustRender();
+ $('#pk').innerHTML=d.k==='pre'?pkHTML():'';if(d.k==='pre')pkList();
  const need=!INFO.fOutNo&&!INFO.fOutTerm;
  $('#nudge').innerHTML=(d.k==='pre'&&need)?`<button class="nudge" onclick="go(4)">✈️ 항공권 정보를 적어 둘까요?<small>편명과 도착 터미널을 적으면 공항 안내가 맞춰져요</small></button>`:'';
  const has=d.k!=='pre';
