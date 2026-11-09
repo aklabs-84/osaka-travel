@@ -193,6 +193,16 @@ body.mapmode #ms{display:block}
 .money{background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:0 4px 0 var(--line)}
 .money .lab{font-size:14px;color:var(--sub)}.money .big{font-family:var(--font-num);font-weight:700;font-size:44px;line-height:1.1;color:var(--sea2)}
 :root[data-theme=dark] .money .big{color:var(--sea)}
+.calc2{margin:14px 0;background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:0 4px 0 var(--line)}
+.calc2>b{font-size:17px}
+.calc2 .cr{display:flex;align-items:center;gap:10px;margin-top:10px}
+.calc2 .cr input{flex:1;min-width:0;font-family:var(--font-num);font-size:22px;font-weight:800;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--tx)}
+.calc2 .cr em{font-style:normal;font-weight:700;color:var(--sub);width:62px}
+.calc2 .cs{text-align:center;color:var(--sea2);font-size:20px;line-height:1.2;margin-top:4px}
+.calc2 .cq{display:flex;gap:6px;margin-top:10px}
+.calc2 .cq button{flex:1;padding:9px 0;font-size:14px;font-weight:700;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);white-space:nowrap}
+.calc2 .crt{margin-top:12px;font-size:14.5px;color:var(--sub);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.calc2 .crt input{width:84px;padding:6px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-weight:700;font-size:16px}
 .calc{display:flex;align-items:center;gap:10px;margin:14px 0;background:var(--card);border-radius:18px;padding:12px 16px;box-shadow:0 4px 0 var(--line)}
 .calc input{width:120px;font-family:var(--font-num)}
 .calc output{font-weight:800;font-size:20px}
@@ -313,7 +323,13 @@ nav.tabs button.on:after{transform:scaleX(1)}
     <div class="fl" style="margin-bottom:10px"><span>쓴 곳</span><input id="exn" placeholder="예: 라멘, 지하철, 기념품" maxlength="40"></div>
     <div class="fr"><input id="exy" type="number" inputmode="numeric" placeholder="엔 (¥)" aria-label="금액(엔)"><button class="btn" onclick="addEx()">기록</button></div>
   </div>
-  <div class="calc"><input id="yen" type="number" inputmode="numeric" placeholder="엔"><span>=</span><output id="out">0원</output></div>
+  <div class="calc2"><b>💱 환율 계산기</b>
+   <div class="cr"><input id="yen" type="number" inputmode="numeric" placeholder="0" aria-label="엔"><em>엔 ¥</em></div>
+   <div class="cs">⇅</div>
+   <div class="cr"><input id="won" type="number" inputmode="numeric" placeholder="0" aria-label="원"><em>원 ₩</em></div>
+   <div class="cq"><button onclick="calcSet(1000)">¥1,000</button><button onclick="calcSet(5000)">¥5,000</button><button onclick="calcSet(10000)">¥10,000</button><button onclick="calcSet(50000)">¥50,000</button></div>
+   <div class="crt">오늘 환율 ¥100 = <input id="rt" type="number" inputmode="numeric" aria-label="100엔당 원"> 원</div>
+  </div>
   <div class="q"><button onclick="quick('지하철',820,'move')">🚇 지하철<br>¥820</button><button onclick="quick('편의점',600,'food')">🏪 편의점<br>¥600</button><button onclick="quick('커피',500,'food')">☕ 커피<br>¥500</button></div>
   <ul class="exl" id="exl"></ul>
   <button class="btn ln big" style="margin-top:16px" onclick="taxOv()">🛍️ 면세 물어보기 · 5,000엔 계산</button>
@@ -979,8 +995,11 @@ function money(){
  $('#tot').textContent='¥'+t.toLocaleString();
  $('#krw').textContent='약 '+Math.round(t*INFO.rate).toLocaleString()+'원 (¥100='+Math.round(INFO.rate*100)+'원)';
  $('#exl').innerHTML=spent.length?spent.map((e,k)=>`<li><span class="nm">${esc(e.n)}<small>${exName(e.c)}${e.t?' · '+new Date(e.t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):''}</small></span><b>¥${e.y.toLocaleString()}</b><button class="x" aria-label="지우기" onclick="delEx(${k})">✕</button></li>`).join(''):'<li style="color:var(--sub)">아직 기록이 없어요. 위에서 적어 보세요.</li>';
- $('#out').textContent=Math.round((+$('#yen').value||0)*INFO.rate).toLocaleString()+'원';
+ calcSync();
 }
+const rt100=()=>Math.round(INFO.rate*100);
+function calcSync(){const r=$('#rt');if(r&&document.activeElement!==r)r.value=rt100();if(document.activeElement!==$('#won'))$('#won').value=$('#yen').value?Math.round((+$('#yen').value||0)*INFO.rate):''}
+function calcSet(y){$('#yen').value=y;calcSync()}
 function saveEx(){store.set('spent',spent);money()}
 const EXK=[['food','🍜','식비'],['move','🚇','교통'],['shop','🛍','쇼핑'],['do','🎟','구경'],['etc','📦','기타']];
 const exName=c=>{const k=EXK.find(x=>x[0]===c)||EXK[4];return k[1]+' '+k[2]};
@@ -1010,7 +1029,9 @@ async function scanGo(inp){
 function addEx(){const n=$('#exn').value.trim()||'기타',y=Math.round(+$('#exy').value);if(!y||y<=0){gtoast('금액(엔)을 넣어 주세요');return}spent.unshift({n,y,c:exc,t:Date.now()});$('#exn').value='';$('#exy').value='';saveEx()}
 function quick(n,y,c){spent.unshift({n,y,c:c||exc,t:Date.now()});saveEx()}
 function delEx(k){spent.splice(k,1);saveEx()}
-$('#yen').oninput=()=>money();
+$('#yen').oninput=()=>calcSync();
+$('#won').oninput=()=>{const w=+$('#won').value;$('#yen').value=$('#won').value===''?'':Math.round(w/INFO.rate)};
+$('#rt').onchange=()=>{const n=+$('#rt').value;if(n>0&&n<2000)setInfo('rate',n);else{gtoast('100엔이 몇 원인지 숫자로 적어 주세요');$('#rt').value=rt100()}};
 
 /* ---------- 내 정보 ---------- */
 const TERM=[['','아직 몰라요'],['1','1터미널'],['2','2터미널']];
