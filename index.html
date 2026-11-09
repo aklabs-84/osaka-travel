@@ -252,6 +252,10 @@ textarea{resize:vertical;line-height:1.5}
 #ov{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;padding:calc(14px + env(safe-area-inset-top)) 16px 28px}
 #ov.on{display:block}
 #ov .inner{max-width:560px;margin:0 auto}
+.rcs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:15px;color:var(--sub)}
+.rcl{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:16px}
+.rcl em{font-style:normal;font-size:13px;font-weight:800;color:var(--ok);display:block}
+.rcl small{color:var(--sub)}
 .phr{background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:12px;box-shadow:0 4px 0 var(--line)}
 .phr .jp{font-size:28px;font-weight:800;line-height:1.35}
 #p5 .phr .jp{font-size:24px}
@@ -332,6 +336,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
    <div class="crt">오늘 환율 ¥100 = <input id="rt" type="number" inputmode="numeric" aria-label="100엔당 원"> 원</div>
   </div>
   <div class="q"><button onclick="quick('지하철',820,'move')">🚇 지하철<br>¥820</button><button onclick="quick('편의점',600,'food')">🏪 편의점<br>¥600</button><button onclick="quick('커피',500,'food')">☕ 커피<br>¥500</button></div>
+  <button class="btn ln big" style="margin-top:14px" onclick="recOv()">🧾 영수증 모아보기 (날짜·가게별)</button>
   <ul class="exl" id="exl"></ul>
   <button class="btn ln big" style="margin-top:16px" onclick="taxOv()">🛍️ 면세 물어보기 · 5,000엔 계산</button>
   <div class="ft"></div>
@@ -990,6 +995,20 @@ function say(k){  /* 진짜 사람 같은 녹음 파일(audio/p0-f.mp3 …)을 �
 if('speechSynthesis' in window)speechSynthesis.getVoices();
 function openOv(h){$('#ovin').innerHTML=h;$('#ov').classList.add('on');$('#ov').scrollTop=0}
 function closeOv(){$('#ov').classList.remove('on')}
+function recOv(){
+ const dk=t=>t?new Date(t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'}):'날짜 없음';
+ const days=[];
+ spent.slice().sort((a,b)=>(b.t||0)-(a.t||0)).forEach(e=>{
+  const k=dk(e.t);let d=days.find(x=>x.k===k);if(!d){d={k,sum:0,st:[]};days.push(d)}
+  const nm=(e.n||'기타').split(' · ')[0].trim()||'기타';
+  let st=d.st.find(x=>x.nm===nm);if(!st){st={nm,sum:0,n:0,shop:0,c:e.c};d.st.push(st)}
+  st.sum+=e.y;st.n++;if(e.c==='shop')st.shop=1;d.sum+=e.y;
+ });
+ const tot=spent.reduce((a,b)=>a+b.y,0);
+ const cats=EXK.map(k=>[k,spent.filter(e=>e.c===k[0]).reduce((a,b)=>a+b.y,0)]).filter(c=>c[1]);
+ const body=days.length?`<div class="phr"><b>종류별 합계 · 전체 ¥${tot.toLocaleString()}</b><div class="rcs">${cats.map(([k,v])=>`<span>${k[1]} ${k[2]} <b>¥${v.toLocaleString()}</b></span>`).join('')}</div></div>`+days.map(d=>`<div class="phr"><b>${esc(d.k)} <span style="float:right">¥${d.sum.toLocaleString()}</span></b>${d.st.sort((a,b)=>b.sum-a.sum).map(x=>`<div class="rcl"><span>${esc(x.nm)}${x.n>1?' <small>('+x.n+'건)</small>':''}${x.shop&&x.sum>=5000?' <em>면세 기준 넘음 ✓</em>':''}</span><b>¥${x.sum.toLocaleString()}</b></div>`).join('')}</div>`).join('')+'<p class="hint">면세 표시는 “쇼핑으로 적은 한 가게의 하루 합계가 ¥5,000 이상”일 때 붙어요. 실제 가능 여부는 가게에서 꼭 확인하세요. 영수증 종이는 면세 때 필요할 수 있으니 버리지 마세요.</p>':'<div class="phr">아직 기록이 없어요. 영수증을 찍거나 금액을 적으면 여기에 모여요.</div>';
+ openOv(`<div class="ph2"><b>🧾 영수증 모아보기</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>${body}`);
+}
 function taxOv(){
  openOv(`<div class="ph2"><b>직원에게 보여 주세요</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
  ${PHR.slice(0,5).map((p,k)=>`<div class="phr"><div class="jp">${p[0]}</div><div class="rd">${p[1]}</div><div class="ko">${p[2]}</div><button class="btn say" onclick="say(${k})" aria-label="일본어로 읽어 주기">🔊 소리로 들려주기</button></div>`).join('')}
