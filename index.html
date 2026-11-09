@@ -145,6 +145,14 @@ body.mapmode #ms{display:block}
 .pcard .t2 .btn{padding:10px 12px;font-size:15px}
 .pcard .t2 .btn:first-of-type{margin-left:auto}
 .pcard .t2 .btn{white-space:nowrap}
+#nx:empty{display:none}
+.nx{background:var(--card);border-radius:14px;padding:12px 14px;margin:6px 0 4px;border:2px solid var(--sea);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.nx small{font-size:13.5px;color:var(--sea2);font-weight:700}
+.nx b{font-size:17.5px;line-height:1.35}
+.nxt{display:flex;gap:10px;align-items:center;margin:8px 0 10px}.nxt>div{min-width:0}.nxt span:not(.ic){display:block;font-size:14px;color:var(--sub)}
+.nxt .ic{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff}
+.nxb{display:flex;gap:8px}.nxb .btn{flex:1;padding:10px 6px;font-size:14.5px;white-space:nowrap;text-align:center}
+.nxu{margin-top:8px;background:none;border:0;color:var(--sub);font-size:14px;padding:6px 0;text-decoration:underline}
 #offbar{display:none;position:fixed;top:0;left:0;right:0;z-index:60;background:#2B2B2B;color:#fff;font-size:13.5px;text-align:center;padding:calc(5px + env(safe-area-inset-top)) 8px 5px}
 .pcard .t3{display:flex;gap:8px;margin-top:8px}
 .pcard .t3 .btn{flex:1;padding:9px 8px;font-size:14px;white-space:nowrap}
@@ -270,6 +278,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
 
 <section class="pane on" id="p0">
   <div class="vw" id="vw0"></div>
+  <div id="nx"></div>
   <h2 class="sec fh"><span id="mh">꼭 해야 하는 일</span><button class="fold" id="mf" onclick="foldTog('m')"></button></h2>
   <div class="must" id="must"></div>
   <div id="mtadd"></div>
@@ -670,6 +679,19 @@ function mustRender(){
  $('#mtadd').innerHTML=mtOpen?`<div class="mtadd"><input id="mti" maxlength="40" placeholder="예: 환전하기" value="${esc(mtEdit?(myTodos().find(m=>m[0]===mtEdit)||[])[1]||'':'')}" onkeydown="if(event.key==='Enter')mtSave()" aria-label="할 일 내용"><button class="btn" onclick="mtSave()">${mtEdit?'저장':'추가'}</button><button class="btn ln" onclick="mtClose()">취소</button></div>`:`<button class="btn big" style="width:100%;margin-top:12px" onclick="mtStart()">＋ 할 일 추가</button>`;
  if(mtOpen){const i=$('#mti');if(i&&document.activeElement!==i)i.focus()}
 }
+function nextHTML(){
+ const d=DAYS[day];
+ if(todayIdx()!==day||d.k==='pre')return '';
+ const SO={am:0,noon:1,pm:2};
+ const L=PLACES.map((p,i)=>({p,i})).filter(o=>o.p.day===d.k&&!o.p.home&&pShow(o.p)).sort((a,b)=>(SO[a.p.slot]||0)-(SO[b.p.slot]||0)||a.i-b.i);
+ const nx=L.find(o=>!o.p.v),dn=L.filter(o=>o.p.v);
+ if(!L.length)return '';
+ const undo=dn.length?`<button class="nxu" onclick="visit('${dn[dn.length-1].p.id}',0)">↩ 되돌리기</button>`:'';
+ if(!nx)return `<div class="nx"><b>🎉 오늘 갈 곳을 모두 다녀왔어요</b>${undo}</div>`;
+ const p=nx.p,sl=({am:'아침',noon:'낮',pm:'저녁'})[p.slot]||'';
+ return `<div class="nx"><small>다음에 갈 곳 ${dn.length+1}/${L.length}${sl?' · '+sl:''}</small><div class="nxt"><span class="ic ${PC[p.c]||'pc-do'}">${esc(p.i)}</span><div><b>${esc(p.n)}</b><span>${distText(p)}${p.chk?' · 위치는 어림':''}</span></div></div><div class="nxb"><a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">길찾기 ↗</a>${p.lat!=null?`<button class="btn ln" onclick="showOnMap(${nx.i})">🗺 지도</button>`:''}<button class="btn ln" onclick="visit('${p.id}',1)">✔ 다녀왔어요</button></div>${undo}</div>`;
+}
+function visit(id,v){const p=PLACES.find(x=>x.id===id);if(!p)return;p.v=v?1:0;savePlaces();render();gtoast(v?'다녀왔어요 체크!':'되돌렸어요')}
 function mtab(v){mTab=v;store.set('mtab',v);mustRender()}
 function foldBtn(k,lab){const b=$('#'+k+'f');b.className='fold'+(FOLD[k]?' shut':'');b.setAttribute('aria-expanded',!FOLD[k]);b.innerHTML=(FOLD[k]?lab+' 펼치기':'접기')+'<i>▲</i>'}
 function foldTog(k){FOLD[k]=!FOLD[k];store.set(k==='m'?'mfold':'tfold',FOLD[k]?1:0);render()}
@@ -690,6 +712,7 @@ function mtDel(id){
 function render(){
  const d=DAYS[day];
  $('#mh').textContent=d.k==='pre'?'꼭 해야 하는 일':'이날 꼭 할 일';
+ $('#nx').innerHTML=nextHTML();
  mustRender();
  const need=!INFO.fOutNo&&!INFO.fOutTerm;
  $('#nudge').innerHTML=(d.k==='pre'&&need)?`<button class="nudge" onclick="go(4)">✈️ 항공권 정보를 적어 둘까요?<small>편명과 도착 터미널을 적으면 공항 안내가 맞춰져요</small></button>`:'';
