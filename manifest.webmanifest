@@ -1,0 +1,16 @@
+{
+  "name": "오사카 여행 플래너",
+  "short_name": "오사카 플래너",
+  "description": "오사카 2박 3일 일정·지도·가이드·가계부",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E6F6F5",
+  "theme_color": "#0E9AA7",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
