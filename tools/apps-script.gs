@@ -55,6 +55,7 @@ function doPost(e) {
   try { body = JSON.parse(e.postData.contents); } catch (err) { return out_({ ok: 0, error: 'bad' }); }
   if (!body || body.k !== SECRET || SECRET.indexOf('바꾸세요') >= 0) return out_({ ok: 0, error: 'code' });
   if (body.act === 'receipt') return out_(receipt_(body.img));   // 영수증 읽기(시트는 건드리지 않음)
+  if (body.act === 'resolve') return out_(resolve_(body.url));   // 구글 지도 짧은 링크 풀기(시트는 건드리지 않음)
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -66,6 +67,31 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ================= 구글 지도 짧은 링크 풀기 =================
+ * maps.app.goo.gl 같은 짧은 주소를 따라가서 진짜 주소(좌표가 들어 있음)를 돌려준다.
+ * 구글 지도 관련 주소만 허용한다(아무 주소나 열어 주지 않도록).
+ */
+function okHost_(u) {
+  const m = /^https:\/\/([^\/?#]+)/i.exec(u || '');
+  if (!m) return false;
+  const h = m[1].toLowerCase();
+  return h === 'maps.app.goo.gl' || h === 'goo.gl' || h === 'g.co' || h === 'maps.google.com' || h === 'google.com' || h === 'www.google.com' || /^(www\.)?google\.(co\.jp|co\.kr)$/.test(h);
+}
+function resolve_(url) {
+  try {
+    let u = String(url || '').trim();
+    for (let i = 0; i < 6; i++) {
+      if (!okHost_(u)) return { ok: 0, error: 'host' };
+      if (/\/maps\/place\//.test(u) || /[?&](q|ll|query)=/.test(u) || /@-?\d+\.\d+,-?\d+\.\d+/.test(u)) return { ok: 1, url: u };
+      const r = UrlFetchApp.fetch(u, { followRedirects: false, muteHttpExceptions: true });
+      const loc = r.getHeaders()['Location'] || r.getHeaders()['location'];
+      if (!loc) return { ok: 1, url: u };
+      u = loc;
+    }
+    return { ok: 1, url: u };
+  } catch (err) { return { ok: 0, error: 'net' }; }
 }
 
 /* ================= 영수증 읽기 =================
