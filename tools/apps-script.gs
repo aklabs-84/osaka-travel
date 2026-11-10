@@ -56,6 +56,7 @@ function doPost(e) {
   if (!body || body.k !== SECRET || SECRET.indexOf('바꾸세요') >= 0) return out_({ ok: 0, error: 'code' });
   if (body.act === 'receipt') return out_(receipt_(body.img));   // 영수증 읽기(시트는 건드리지 않음)
   if (body.act === 'resolve') return out_(resolve_(body.url));   // 구글 지도 짧은 링크 풀기(시트는 건드리지 않음)
+  if (body.act === 'list') return out_(list_(body.url));         // 구글 지도 공유 목록의 장소 읽기(시트는 건드리지 않음)
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -91,6 +92,42 @@ function resolve_(url) {
       u = loc;
     }
     return { ok: 1, url: u };
+  } catch (err) { return { ok: 0, error: 'net' }; }
+}
+
+/* ================= 구글 지도 공유 목록 읽기 =================
+ * 「저장됨」·「가고 싶은 장소」 같은 목록을 "링크 공유"로 열어 둔 링크를 받아, 안의 장소(이름·좌표)를 돌려준다.
+ * 구글이 공식으로 열어 둔 방법이 아니라서, 구글 화면이 바뀌면 안 될 수 있다(그땐 앱이 파일 방식을 안내한다).
+ */
+function list_(url) {
+  try {
+    let u = String(url || '').trim(), id = '';
+    for (let i = 0; i < 6 && !id; i++) {
+      if (!okHost_(u)) return { ok: 0, error: 'host' };
+      const m = /!2s([A-Za-z0-9_-]{20,})/.exec(u) || /(?:placelists|userlists)\/list\/([A-Za-z0-9_-]{20,})/.exec(u);
+      if (m) { id = m[1]; break; }
+      const r = UrlFetchApp.fetch(u, { followRedirects: false, muteHttpExceptions: true });
+      const loc = r.getHeaders()['Location'] || r.getHeaders()['location'];
+      if (!loc) break;
+      u = loc;
+    }
+    if (!id) return { ok: 0, error: 'nolist' };
+    const api = 'https://www.google.com/maps/preview/entitylist/getlist?authuser=0&hl=ko&gl=kr&pb=' +
+      '!1m4!1s' + id + '!2e2!3m1!1e1!2e2!3e2!4i500';
+    const t = UrlFetchApp.fetch(api, { muteHttpExceptions: true }).getContentText();
+    const d = JSON.parse(t.replace(/^\)\]\}'\s*/, ''));
+    const m0 = d[0] || [];
+    const items = m0[8] || [];
+    const places = [];
+    items.forEach(it => {
+      try {
+        const n = String(it[2] || '').trim(), pl = it[1] || [], co = pl[5] || [];
+        if (!n) return;
+        places.push({ n: n, lat: typeof co[2] === 'number' ? co[2] : null, lng: typeof co[3] === 'number' ? co[3] : null, memo: String(it[3] || '').trim().slice(0, 80) });
+      } catch (e) {}
+    });
+    if (!places.length) return { ok: 0, error: 'empty' };
+    return { ok: 1, name: String(m0[4] || ''), places: places.slice(0, 200) };
   } catch (err) { return { ok: 0, error: 'net' }; }
 }
 

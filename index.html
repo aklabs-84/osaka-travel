@@ -348,6 +348,11 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <div id="offc"></div>
   <div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📥 구글 지도에서 장소 한꺼번에 가져오기</b>
    <p class="hint" style="margin:6px 0 10px">구글 지도에 모아 둔 장소를 파일로 받아 여기서 열면, 한 번에 목록에 넣을 수 있어요. 넣기 전에 골라 볼 수 있어요.</p>
+   <b style="font-size:15.5px">🔗 목록 링크로 가져오기</b>
+   <p class="hint" style="margin:4px 0 8px">구글 지도 ▸ 저장됨 ▸ 목록 ▸ ⋮ ▸ <b>목록 공유</b>(링크가 있는 사람은 볼 수 있음)로 복사한 링크를 붙여 넣어요. “같이 쓰기”가 연결돼 있어야 해요.</p>
+   <input id="impl" placeholder="https://maps.app.goo.gl/…" inputmode="url" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--tx);margin-bottom:8px">
+   <button class="btn big" id="impb" style="width:100%" onclick="impLink()">링크로 장소 가져오기</button>
+   <p class="hint" style="margin:14px 0 8px"><b>또는 파일로</b></p>
    <label class="btn" style="cursor:pointer">📂 파일 고르기<input type="file" id="impf" accept=".kml,.json,.geojson,.csv,.txt" style="display:none" onchange="impPick(this)"></label>
    <details style="margin-top:10px"><summary style="font-weight:800;font-size:15.5px;cursor:pointer">파일은 어떻게 받아요?</summary>
     <div class="hint" style="line-height:1.7"><b>① 내 지도(My Maps)</b> — 구글 지도 ▸ 저장됨 ▸ 지도 탭에서 만든 지도를 열고, ⋮ ▸ <b>KML/KMZ로 내보내기</b> ▸ “전체 지도” ▸ <b>KMZ 대신 .KML 파일로 내보내기</b>를 체크해 받아요. 위치가 정확해서 가장 좋아요.<br><b>② 저장한 장소 목록</b> — 구글 테이크아웃(takeout.google.com)에서 “저장됨(Saved)”만 골라 내려받아, 안의 <b>.csv 또는 .json</b> 파일을 열어요. csv는 이름으로 위치를 찾느라 조금 느려요.<br>아내 폰의 「저장됨」은 아내가 위 방법으로 파일을 받아 보내 주면 돼요.</div></details>
@@ -1334,17 +1339,36 @@ function impPick(el){
   let L=[];
   try{L=impParse(f.name,r.result)}catch(e){gtoast('파일을 읽지 못했어요. KML·csv·json 파일이 맞는지 봐 주세요');return}
   if(/\.kmz$/i.test(f.name))L=[];
-  L=L.filter(x=>x.n).slice(0,80);
-  const have=PLACES.map(p=>p);
-  IMP=L.map(x=>{
-   const dup=have.some(p=>p.n.trim().toLowerCase()===x.n.toLowerCase()||(x.lat!=null&&p.lat!=null&&Math.abs(p.lat-x.lat)<3e-4&&Math.abs(p.lng-x.lng)<3e-4));
-   const far=x.lat!=null&&!(x.lat>33&&x.lat<36.5&&x.lng>134&&x.lng<137.5);
-   return Object.assign(x,{dup,far,on:!dup&&!far});
-  });
-  if(!IMP.length){gtoast('가져올 장소가 없어요. KMZ라면 .KML로 다시 내보내 주세요');return}
-  impOv();
+  impFinish(L);
  };
  r.readAsText(f);
+}
+function impFinish(L){
+ L=L.filter(x=>x.n).slice(0,80);
+ const have=PLACES.map(p=>p);
+ IMP=L.map(x=>{
+  const dup=have.some(p=>p.n.trim().toLowerCase()===x.n.toLowerCase()||(x.lat!=null&&p.lat!=null&&Math.abs(p.lat-x.lat)<3e-4&&Math.abs(p.lng-x.lng)<3e-4));
+  const far=x.lat!=null&&!(x.lat>33&&x.lat<36.5&&x.lng>134&&x.lng<137.5);
+  return Object.assign(x,{dup,far,on:!dup&&!far});
+ });
+ if(!IMP.length){gtoast('가져올 장소가 없어요. KMZ라면 .KML로 다시 내보내 주세요');return}
+ impOv();
+}
+async function impLink(){
+ const raw=($('#impl').value||'').trim(),m=/https?:\/\/\S+/.exec(raw);
+ if(!m){gtoast('구글 지도에서 복사한 목록 링크를 붙여 넣어 주세요');return}
+ const c=syncCfg();
+ if(!c.on||!c.url||!c.code){gtoast('링크로 가져오려면 아래 "같이 쓰기"를 먼저 연결해 주세요');return}
+ const b=$('#impb'),t0=b.textContent;b.disabled=true;b.textContent='읽는 중…';
+ try{
+  const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'list',url:m[0]}),redirect:'follow'});
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error||'fail');
+  impFinish((j.places||[]).map(x=>({n:x.n,lat:x.lat,lng:x.lng,memo:x.memo||''})));
+ }catch(e){
+  const s=e.message;
+  gtoast(s==='code'?'비밀 코드가 달라요':s==='host'?'구글 지도 링크가 아니에요':s==='empty'||s==='nolist'?'목록에서 장소를 못 읽었어요. “링크가 있는 사람은 볼 수 있음”인지, 장소가 들어 있는지 봐 주세요':'못 읽었어요. 인터넷·같이 쓰기 연결을 보거나 파일로 가져와 주세요');
+ }finally{const bb=$('#impb');if(bb){bb.disabled=false;bb.textContent=t0}}
 }
 function impOv(msg){
  const n=IMP.filter(x=>x.on).length,noLoc=IMP.filter(x=>x.on&&x.lat==null).length;
