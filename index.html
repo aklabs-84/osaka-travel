@@ -287,6 +287,7 @@ textarea{resize:vertical;line-height:1.5}
 .pcard{cursor:pointer}
 .phr .rd{font-size:16px;color:var(--sea2);font-weight:700}.phr .ko{font-size:16px;color:var(--sub)}
 :root[data-theme=dark] .phr .rd{color:var(--sea)}
+.lgtog{display:flex;gap:8px;margin-bottom:12px}.lgtog button{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);font:inherit;font-size:18px;font-weight:700}.lgtog button.on{background:var(--sea2);border-color:var(--sea2);color:#fff}:root[data-theme=dark] .lgtog button.on{color:#0A1D26}
 .bigaddr{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 4px 0 var(--line);margin-bottom:12px}
 .bigaddr .n{font-size:30px;font-weight:800;line-height:1.3}.bigaddr .a{font-size:24px;line-height:1.5;margin-top:10px;word-break:break-word}.bigaddr .p{font-family:var(--font-num);font-size:26px;margin-top:10px}
 
@@ -612,7 +613,7 @@ const savePlaces=()=>store.set('places',PLACES);
  if(ch)savePlaces();
  store.set('locv',1);
 })();
-const INFO_DEF={hotelKo:'소테츠 프레사 인 기타하마',hotelEn:'Sotetsu Fresa Inn Kitahama',addr:'2-4-10 Koraibashi, Chuo Ward, Osaka City, Osaka Prefecture, 541-0043, Japan',phone:'+81 6-7711-2203',inDate:'2026-11-30',outDate:'2026-12-02',fOutNo:'',fOutTerm:'',fOutTime:'',fBackNo:'',fBackTerm:'',fBackTime:'',pEn:'',pExp:'',emerg:'',rate:8.6};
+const INFO_DEF={hotelKo:'소테츠 프레사 인 기타하마',hotelEn:'Sotetsu Fresa Inn Kitahama',hotelJa:'相鉄フレッサイン 北浜',addrJa:'〒541-0043 大阪府大阪市中央区高麗橋2-4-10',addr:'2-4-10 Koraibashi, Chuo Ward, Osaka City, Osaka Prefecture, 541-0043, Japan',phone:'+81 6-7711-2203',inDate:'2026-11-30',outDate:'2026-12-02',fOutNo:'',fOutTerm:'',fOutTime:'',fBackNo:'',fBackTerm:'',fBackTime:'',pEn:'',pExp:'',emerg:'',rate:8.6};
 const INFO=Object.assign({},INFO_DEF,store.get('info',{}));
 /* 내가 만든 장소 종류: INFO.kinds = [[아이디,이모티콘,이름],…] (정보와 함께 같이 쓰기로 동기화) */
 function kindsRebuild(){
@@ -1070,10 +1071,16 @@ function taxOv(){
  <button class="btn big" style="margin-top:12px" onclick="closeOv();toGuide('tax')">면세 가이드 보기 →</button>`);
 }
 function taxCalc(){const v=+$('#tc').value||0,r=5000-v;$('#tcr').textContent=!v?'금액을 넣어 보세요.':(r>0?'¥'+r.toLocaleString()+' 더 사면 기준을 넘어요':'기준(¥5,000)을 넘었어요 ✓ 면세 물어보기')}
-function addrOv(){
+let addrLang=store.get('addrLang','ja');
+function addrOv(l){
+ if(l){addrLang=l;store.set('addrLang',l)}
+ const ja=addrLang==='ja';
+ const nm=ja?(INFO.hotelJa||INFO.hotelEn||INFO.hotelKo):(INFO.hotelEn||INFO.hotelKo);
+ const ad=ja?(INFO.addrJa||INFO.addr):INFO.addr;
  openOv(`<div class="ph2"><b>숙소 주소</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
- <div class="bigaddr"><div class="n">${esc(INFO.hotelEn||INFO.hotelKo)}</div><div class="a">${esc(INFO.addr)}</div><div class="p">${esc(INFO.phone)}</div></div>
- <p class="hint">택시 기사님이나 직원에게 이 화면을 보여 주세요.</p>`);
+ <div class="lgtog"><button class="${ja?'on':''}" onclick="addrOv('ja')">日本語</button><button class="${ja?'':'on'}" onclick="addrOv('en')">English</button></div>
+ <div class="bigaddr"><div class="n">${esc(nm)}</div><div class="a">${esc(ad)}</div><div class="p">${esc(INFO.phone)}</div></div>
+ <p class="hint">${ja?'택시 기사님이나 직원에게 이 화면을 보여 주세요. (일본어 표시)':'택시 기사님이나 직원에게 이 화면을 보여 주세요. (영어 표시)'}</p>`);
 }
 
 /* ---------- 가계부 ---------- */
@@ -1127,6 +1134,8 @@ const IF=[
  ['hotelKo','한글 이름','text'],
  ['hotelEn','영문 이름','text','',1],
  ['addr','주소 (영문)','area','',1],
+ ['hotelJa','일본어 이름','text','',1],
+ ['addrJa','주소 (일본어)','area','',1,'택시 기사님께 보여 줄 때 쓰는 일본어 주소예요.'],
  ['phone','전화번호','tel','',1,'호텔 공식 사이트 기준이에요. 예약 확인서와 같은지 출발 전에 확인해 주세요.'],
  ['inDate','체크인 날짜','date'],
  ['outDate','체크아웃 날짜','date'],
