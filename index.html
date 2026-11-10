@@ -1222,7 +1222,7 @@ function importAll(f){
 /* ---------- 동행자와 같이 쓰기 (구글 시트 중계) ---------- */
 /* 항목마다 {v:내용(글자), u:고친 시각}. v=null 은 "지웠다"는 표시. 시각이 큰 쪽이 이김. 여권·비상연락·QR은 보내지 않음 */
 const SYNC_KEYS=['places','info','done','spent'],SYNC_PRIVATE=['pEn','pExp','emerg'];
-let syncing=false,syncAgain=false,syncApplying=false,syncTimer=null,syncMsg='';
+let syncing=false,syncUiOn=false,syncAgain=false,syncApplying=false,syncTimer=null,syncMsg='';
 const syncCfg=()=>store.get('sync',{url:'',code:'',on:false,last:0});
 function syncCur(){
  const c={pl:{},sp:{},dn:{},inf:{}};
@@ -1281,30 +1281,31 @@ function reportDoc(){
 async function syncNow(manual){
  const c=syncCfg();
  if(!c.on||!c.url||!c.code)return;
- if(syncing){if(manual)gtoast('맞추는 중이에요');else syncAgain=true;return}
+ if(syncing){if(manual){syncUiOn=true;syncUi('up')}else syncAgain=true;return}   /* 이미 맞추는 중이면 그 진행을 화면에 보여줌 */
  syncing=true;syncAgain=false;syncMsg='';
  let changed=false,okUi=false;
  const mark=()=>{changed=true};syncNow.mark=mark;
- const ui=s=>{if(manual)syncUi(s)};
+ const ui=s=>{if(manual||syncUiOn)syncUi(s)};
  try{
   ui('up');
   if(!navigator.onLine)throw new Error('offline');
   const sent=JSON.stringify(syncLocalDoc());
-  const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,doc:JSON.parse(sent),rep:reportDoc()}),redirect:'follow'});
+  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),45000);   /* 45초 넘게 답이 없으면 끊기 */
+  let r;try{r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,doc:JSON.parse(sent),rep:reportDoc()}),redirect:'follow',signal:ac.signal})}catch(e2){throw new Error(ac.signal.aborted?'timeout':'net')}finally{clearTimeout(to)}
   const j=await r.json();
   if(!j.ok)throw new Error(j.error||'fail');
-  ui('down');if(manual)await new Promise(r=>setTimeout(r,700));   /* 너무 빨리 사라지지 않게 */
+  ui('down');if(manual||syncUiOn)await new Promise(r=>setTimeout(r,700));   /* 너무 빨리 사라지지 않게 */
   if(changed||JSON.stringify(syncLocalDoc())!==sent){syncAgain=true}   /* 보내는 동안 또 고쳤으면 덮지 않고 다시 */
   else syncApply(j.doc);
   const n=syncCfg();n.last=Date.now();if(typeof j.sheet==='string'&&SHEET_RE.test(j.sheet)){n.sheet=j.sheet;n.sheetFor=c.url}store.set('sync',n);syncMsg='';
   okUi=true;sheetBtn();
-  if(manual)gtoast('동기화했어요');
+  if(manual||syncUiOn)gtoast('동기화했어요');
  }catch(e){
-  syncMsg=e.message==='code'?'비밀 코드가 달라요':(e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':'연결이 안 돼요. 주소와 코드를 확인해 주세요');
-  if(manual)gtoast(syncMsg);
+  syncMsg=e.message==='code'?'비밀 코드가 달라요':(e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':(e.message==='timeout'?'답이 너무 늦어요(45초). 잠시 뒤 다시 눌러 주세요':'연결이 안 돼요. 주소와 코드를 확인해 주세요'));
+  if(manual||syncUiOn)gtoast(syncMsg);
  }
  syncing=false;syncNow.mark=null;
- if(manual)syncUi(okUi?'ok':'err');
+ if(manual||syncUiOn)syncUi(okUi?'ok':'err');syncUiOn=false;
  syncStatus();
  if(syncAgain)setTimeout(()=>syncNow(),300);
 }
