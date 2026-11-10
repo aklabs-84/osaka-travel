@@ -288,6 +288,9 @@ textarea{resize:vertical;line-height:1.5}
 .phr .rd{font-size:16px;color:var(--sea2);font-weight:700}.phr .ko{font-size:16px;color:var(--sub)}
 :root[data-theme=dark] .phr .rd{color:var(--sea)}
 .mzb{display:flex;align-items:center;gap:10px;margin-bottom:10px}.mzb span{flex:1;text-align:center;font-weight:800;font-size:18px}.mzb .btn{min-height:46px}
+.rtp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.rtp label{display:block;font-size:12.5px;font-weight:800;color:var(--sub);margin-bottom:3px}.rtp select{width:100%;min-width:0;padding:10px 8px;font:inherit;font-size:14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:#222}
+.rtb{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.rtb .btn{padding:8px 12px;min-height:40px;font-size:14px}
+.rtr{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;color:#222;font-size:15px}.rtr ol{margin:8px 0 0;padding:0;list-style:none}.rtr li{padding:8px 0;border-top:1px dashed #ddd;line-height:1.6}.rtr li:first-child{border-top:0}.rtr small{color:#666;font-size:13px}
 .krt{fill:#222;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.krt.kb{font-weight:900}.krw{font-size:13px;fill:#666;font-weight:700}.kvw svg{display:block;width:100%;height:auto}
 .mvw{overflow:auto;border-radius:12px;background:#fff;border:2px solid var(--line);height:62vh;-webkit-overflow-scrolling:touch}.mvw img{display:block;max-width:none}
 .stq{width:100%;min-height:50px;font:inherit;font-size:17px;padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);margin-bottom:10px}
@@ -709,6 +712,7 @@ function postcard(p){
   <div class="row">
    ${p.lat!=null?`<button class="btn ln" onclick="showOnMap(${k})">지도에서 보기</button>`:''}
    <a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">구글 지도 ↗</a>
+   ${!p.home&&p.lat!=null?`<button class="btn ln" onclick="krMap('p'+hotelIdx(),'p${k}')">🚇 지하철 경로</button>`:''}
    ${p.link?`<a class="btn ln" target="_blank" rel="noopener" href="${esc(fixUrl(p.link))}">영상·글 ↗</a>`:''}
    ${p.c==='shop'?`<button class="btn ln" onclick="taxOv()">면세 물어보기</button>`:''}
    <button class="btn ln" onclick="${p.home?'go(4)':`openSheet('${p.id}')`}">${p.home?'숙소 정보':'고치기'}</button>
@@ -1165,41 +1169,58 @@ const KN={SO:['신오사카',470,60,'r'],NN:['니시나카지마|미나미가타
  NU:['니시|우메다',360,300,'l'],HG:['히고바시',360,390,'l'],YT:['요쓰바시',390,610,'l'],HN:['하나조노초',410,860,'l'],KS:['기시노사토',360,920,'l'],TD:['다마데',320,980,'l'],KK:['기타카가야',290,1040,'l'],SM:['스미노에코엔',250,1100,'l'],
  YU:['유메시마',85,520,'u'],CS:['코스모스퀘어',140,520,'u'],OK:['오사카코',195,520,'u'],AS:['아사시오바시',250,520,'u'],BT:['벤텐초',305,520,'u'],KJ:['구조',360,520,'u'],AW:['아와자',415,520,'u'],SH:['사카이스지|혼마치',580,520,'tr'],MR:['모리노미야',860,520,'t'],MD:['미도리바시',940,520,'t'],FK:['후카에바시',1020,520,'t'],TK:['다카이다',1100,520,'t'],
  ND:['노다한신',90,340,'r'],TG:['다마가와',200,420,'r'],NG:['니시|나가호리',320,590,'l'],SK:['사쿠라가와',380,670,'l'],TS:['쓰루하시',950,700,'t'],
- OG:['오기마치',720,200,'r'],KH:['기타하마',600,440,'l'],NH:['나가호리바시',580,610,'r'],NP:['닛폰바시',580,700,'br'],EB:['에비스초',580,790,'r'],TG2:['덴가차야',490,950,'l']};
+ OG:['오기마치',720,200,'r'],KH:['기타하마',600,440,'l'],NH:['나가호리바시',580,610,'r'],NP:['닛폰바시',580,700,'br'],EB:['에비스초',580,790,'r'],TG2:['덴가차야',490,950,'l'],
+ NNK:['난카이 난바',330,770,'l'],SI:['신이마미야',110,880,'r'],SKA:['사카이',110,1020,'r'],IZ:['이즈미사노',110,1160,'r'],RT:['린쿠타운',110,1250,'r'],KX:['간사이공항',110,1340,'r']};
+const KC={SO:[34.7329,135.4985],NN:[34.7266,135.4986],NK:[34.711,135.4968],UM:[34.7034,135.4976],YD:[34.6916,135.501],HM:[34.6828,135.4988],SS:[34.6749,135.4998],NB:[34.6666,135.4992],DK:[34.6562,135.4979],DB:[34.6487,135.504],TN:[34.6478,135.5144],TJ:[34.7102,135.5113],NZ:[34.7072,135.5056],HU:[34.7006,135.4998],MM:[34.6976,135.511],TM:[34.6897,135.5173],T4:[34.6819,135.5174],T6:[34.676,135.5176],T9:[34.6668,135.5164],ST:[34.6588,135.5142],AB:[34.6425,135.512],NU:[34.6995,135.4957],HG:[34.6915,135.4963],YT:[34.674,135.4968],HN:[34.6443,135.4966],TD:[34.6238,135.4904],KK:[34.6213,135.4794],SM:[34.6087,135.4731],YU:[34.6529,135.3905],CS:[34.6426,135.4122],OK:[34.6539,135.4344],AS:[34.6609,135.4488],BT:[34.6684,135.4621],KJ:[34.6753,135.4735],AW:[34.6815,135.4872],SH:[34.6822,135.5067],MR:[34.6818,135.5327],MD:[34.681,135.5452],FK:[34.6791,135.5575],TK:[34.6784,135.5719],ND:[34.6944,135.4749],TG:[34.6896,135.4762],NG:[34.6748,135.487],SK:[34.6683,135.4903],TS:[34.666,135.5291],OG:[34.7045,135.5108],KH:[34.6912,135.5066],NH:[34.6753,135.5063],NP:[34.6669,135.5063],EB:[34.6556,135.5057],TG2:[34.6377,135.4971],KS:[34.6344,135.4939],NNK:[34.6637,135.5018],SI:[34.6501,135.5002],SKA:[34.5819,135.4688],IZ:[34.4112,135.317],RT:[34.4108,135.2997],KX:[34.4358,135.2435]};
+const KWALK=[['UM','HU'],['UM','NU'],['NB','NNK']];
 const KL=[['M','미도스지선','#E5171F',['SO','NN','NK','UM','YD','HM','SS','NB','DK','DB','TN']],
  ['T','다니마치선','#522886',['TJ','NZ','HU','MM','TM','T4','T6','T9','ST','TN','AB']],
  ['Y','요쓰바시선','#0079C2',['NU','HG','HM','YT','NB','DK','HN','KS','TD','KK','SM']],
  ['C','주오선','#019A66',['YU','CS','OK','AS','BT','KJ','AW','HM','SH','T4','MR','MD','FK','TK']],
  ['S','센니치마에선','#E96FA7',['ND','TG','AW','NG','SK','NB','NP','T9','TS']],
- ['K','사카이스지선','#814721',['TJ','OG','MM','KH','SH','NH','NP','EB','DB','TG2']]];
-function krSvg(){
+ ['K','사카이스지선','#814721',['TJ','OG','MM','KH','SH','NH','NP','EB','DB','TG2']],
+ ['NK','난카이선 (공항)','#3A3F47',['NNK','SI','SKA','IZ','RT','KX']]];
+const KVW=1180,KVH=1400;
+function krSvg(R){
+ const on=R?new Set(R.nodes):null;
  const cnt={},seg={};KL.forEach(l=>{l[3].forEach(n=>cnt[n]=(cnt[n]||0)+1);for(let i=0;i<l[3].length-1;i++){const k=[l[3][i],l[3][i+1]].sort().join('-');(seg[k]=seg[k]||[]).push(l[0])}});
- let g='',lab='',dots='';
+ let g='',top='';
  KL.forEach(l=>{let d='';for(let i=0;i<l[3].length-1;i++){const a=KN[l[3][i]],b=KN[l[3][i+1]],u=seg[[l[3][i],l[3][i+1]].sort().join('-')],n=u.length,o=(u.indexOf(l[0])-(n-1)/2)*8;
   let dx=0,dy=0;if(n>1){const L=Math.hypot(b[1]-a[1],b[2]-a[2])||1;dx=-(b[2]-a[2])/L*o;dy=(b[1]-a[1])/L*o}
   d+=`M${a[1]+dx},${a[2]+dy}L${b[1]+dx},${b[2]+dy}`}
-  g+=`<path d="${d}" stroke="${l[2]}" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`});
- g+=`<path d="M470,290L570,290M470,290L360,300" stroke="#8a8a8a" stroke-width="4" stroke-dasharray="3 7" fill="none" stroke-linecap="round"/><text x="520" y="318" class="krw" text-anchor="middle">걸어서 환승</text>`;
+  g+=`<path d="${d}" stroke="${l[2]}" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(l[0]==='NK')g+=`<path d="${d}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10" fill="none"/>`});
+ g+=`<path d="M470,290L570,290M470,290L360,300M470,700L330,770" stroke="#8a8a8a" stroke-width="4" stroke-dasharray="3 7" fill="none" stroke-linecap="round"/><text x="520" y="318" class="krw" text-anchor="middle">걸어서 환승</text><text x="372" y="742" class="krw" text-anchor="middle" transform="rotate(-23 372 742)">걸어서 환승</text>`;
+ g=`<g${R?' opacity=".2"':''}>${g}</g>`;
+ if(R){R.segs.forEach(sg=>{const pts=sg.nodes.map(id=>KN[id][1]+','+KN[id][2]).join('L');
+   if(sg.L==='W')top+=`<path d="M${pts}" stroke="#111" stroke-width="7" stroke-dasharray="4 10" fill="none" stroke-linecap="round"/>`;
+   else{const c=(KL.find(l=>l[0]===sg.L)||[0,0,'#333'])[2];top+=`<path d="M${pts}" stroke="#111" stroke-width="19" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M${pts}" stroke="${c}" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`}});
+  [[R.nodes[0],'출발','#1B9E5A'],[R.nodes[R.nodes.length-1],'도착','#D8362F']].forEach(q=>{const n=KN[q[0]];top+=`<circle cx="${n[1]}" cy="${n[2]}" r="19" fill="none" stroke="${q[2]}" stroke-width="6"/><rect x="${n[1]+10}" y="${n[2]-48}" width="56" height="26" rx="6" fill="${q[2]}" stroke="#fff" stroke-width="2"/><text x="${n[1]+38}" y="${n[2]-29}" text-anchor="middle" font-size="16" font-weight="900" fill="#fff">${q[1]}</text>`})}
+ let nd='';
  Object.keys(KN).forEach(id=>{const n=KN[id],x=n[1],y=n[2],m=cnt[id]>1,r=m?11:7.5;
-  dots+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#222" stroke-width="${m?4:3}"/>`;
-  const big=/우메다|난바|덴노지|신사이바시|신오사카|혼마치$/.test(n[0].replace('|',''))&&!/사카이스지/.test(n[0]);
+  let dots=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#222" stroke-width="${m?4:3}"/>`;
+  const big=/우메다|난바|덴노지|신사이바시|신오사카|혼마치$|간사이공항/.test(n[0].replace('|',''))&&!/사카이스지/.test(n[0]);
   const t=n[0].split('|'),pos=n[3],fs=big?19:15.5,off=r+7;let ax='start',tx=x+off,ty=y+5-(t.length-1)*8,rot='';
   if(pos==='l'){ax='end';tx=x-off}else if(pos==='t'){ax='middle';tx=x;ty=y-off-(t.length-1)*17}else if(pos==='b'){ax='middle';tx=x;ty=y+off+12}
   else if(pos==='tr'){ax='start';tx=x+off;ty=y-off-(t.length-1)*17+2}else if(pos==='bl'){ax='end';tx=x-off;ty=y+off+10}else if(pos==='br'){ax='start';tx=x+off;ty=y+off+10}
   else if(pos==='u'){ax='start';tx=x+3;ty=y-off-2;rot=` transform="rotate(-50 ${tx} ${ty})"`}
-  lab+=`<text x="${tx}" y="${ty}" text-anchor="${ax}" class="krt${big?' kb':''}" font-size="${fs}"${rot}>${t.map((s,i)=>`<tspan x="${tx}" dy="${i?17:0}">${s}</tspan>`).join('')}</text>`});
- const h=KN.KH;lab+=`<g><circle cx="${h[1]}" cy="${h[2]}" r="16" fill="none" stroke="#F6C945" stroke-width="5"/><rect x="${h[1]-132}" y="${h[2]+14}" width="112" height="26" rx="6" fill="#F6C945" stroke="#222" stroke-width="2"/><text x="${h[1]-76}" y="${h[2]+32}" text-anchor="middle" font-size="15" font-weight="900" fill="#222">🏨 우리 숙소</text></g>`;
- return `<svg viewBox="0 0 1180 1140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오사카 메트로 한글 노선도">${g}${dots}${lab}</svg>`;
+  const lab=`<text x="${tx}" y="${ty}" text-anchor="${ax}" class="krt${big?' kb':''}" font-size="${fs}"${rot}>${t.map((s,i)=>`<tspan x="${tx}" dy="${i?17:0}">${s}</tspan>`).join('')}</text>`;
+  nd+=`<g${on&&!on.has(id)?' opacity=".3"':''}>${dots}${lab}</g>`});
+ const h=KN.KH;nd+=`<g><circle cx="${h[1]}" cy="${h[2]}" r="16" fill="none" stroke="#F6C945" stroke-width="5"/><rect x="${h[1]-132}" y="${h[2]+14}" width="112" height="26" rx="6" fill="#F6C945" stroke="#222" stroke-width="2"/><text x="${h[1]-76}" y="${h[2]+32}" text-anchor="middle" font-size="15" font-weight="900" fill="#222">🏨 우리 숙소</text></g>`;
+ const ap=KN.KX;nd+=`<text x="${ap[1]+18}" y="${ap[2]+34}" class="krw">✈️ 난카이선 · 정차역은 열차마다 달라요</text>`;
+ return `<svg viewBox="0 0 ${KVW} ${KVH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오사카 메트로 한글 노선도">${g}${top}${nd}</svg>`;
 }
-let kS=3,kX=0,kY=0;const KMAX=8;
+let kS=3,kX=0,kY=0,kR=null;const KMAX=8;
 function kBox(){const w=$('#kvw');return w?[w.clientWidth,w.clientHeight]:[360,500]}
-function kApply(){const[cw,ch]=kBox(),sw=cw*kS,sh=cw*1140/1180*kS;
+function kApply(){const[cw,ch]=kBox(),sw=cw*kS,sh=cw*KVH/KVW*kS;
  kX=sw<=cw?(cw-sw)/2:Math.min(0,Math.max(cw-sw,kX));kY=sh<=ch?(ch-sh)/2:Math.min(0,Math.max(ch-sh,kY));
  const n=$('#kin');if(n)n.style.transform='translate('+kX+'px,'+kY+'px) scale('+kS+')';
  const l=$('#kzl');if(l)l.textContent=(Math.round(kS*10)/10)+'배'}
 function kZoomAt(f,px,py){const ns=Math.max(1,Math.min(KMAX,kS*f)),r=ns/kS;kX=px-(px-kX)*r;kY=py-(py-kY)*r;kS=ns;kApply()}
 function kZoomBtn(f){const[cw,ch]=kBox();kZoomAt(f,cw/2,ch/2)}
-function kHome(){const[cw,ch]=kBox();kS=3;kX=cw/2-KN.KH[1]/1180*cw*kS;kY=ch/2-KN.KH[2]/1140*(cw*1140/1180)*kS;kApply()}
+function kHome(){const[cw,ch]=kBox();kS=3;kX=cw/2-KN.KH[1]*(cw/KVW)*kS;kY=ch/2-KN.KH[2]*(cw/KVW)*kS;kApply()}
+function kFit(ids){const[cw,ch]=kBox();let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;ids.forEach(id=>{const n=KN[id];x0=Math.min(x0,n[1]);x1=Math.max(x1,n[1]);y0=Math.min(y0,n[2]);y1=Math.max(y1,n[2])});
+ const bw=x1-x0+260,bh=y1-y0+260,u=cw/KVW;kS=Math.max(1,Math.min(KMAX,Math.min(cw/(bw*u),ch/(bh*u))));kX=cw/2-(x0+x1)/2*u*kS;kY=ch/2-(y0+y1)/2*u*kS;kApply()}
 function kBind(){const w=$('#kvw');if(!w)return;const P=new Map();let t0=0,p0=null,mv=0,lt=0;
  const pos=e=>{const r=w.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
  w.onpointerdown=e=>{try{w.setPointerCapture(e.pointerId)}catch(_){}P.set(e.pointerId,pos(e));if(P.size===1){t0=Date.now();p0=pos(e);mv=0}else mv=99;w.style.cursor='grabbing'};
@@ -1213,14 +1234,69 @@ function kBind(){const w=$('#kvw');if(!w)return;const P=new Map();let t0=0,p0=nu
   if(was===1&&mv<8&&Date.now()-t0<300){const n=Date.now();if(n-lt<350){kZoomAt(kS>=KMAX-.1?1/KMAX:2,p0[0],p0[1]);lt=0}else lt=n}};
  w.onpointerup=up;w.onpointercancel=up;
  w.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);kZoomAt(Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0018)),p[0],p[1])},{passive:false})}
-function krMap(){
- openOv(`<div class="ph2"><b>한글 노선도 (오사카 메트로)</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+/* 지하철 길찾기 — 환승이 가장 적은 길 (약도 데이터 기준, 시간·요금은 몰라요) */
+let KCM=null;
+function kcode(){if(KCM)return KCM;const m={},al={'욧쓰바시':'YT'};STN.forEach(r=>{const nm=r[0].replace(/\s/g,'');const id=al[nm]||Object.keys(KN).find(k=>KN[k][0].replace(/[|\s]/g,'')===nm);if(id)r[3].split(' ').forEach(c=>m[c]=id)});m.NK01='NNK';return KCM=m}
+const kname=id=>KN[id][0].replace(/\|/g,'');
+const kLine=l=>KL.find(x=>x[0]===l)||['','','#555',[]];
+function plNode(p){
+ const c=(p.code||'').trim().split(' ')[0],cm=kcode();let id=c&&cm[c],km=0;
+ if(id&&KC[id]&&p.lat!=null)km=hv(p,{lat:KC[id][0],lng:KC[id][1]});
+ if(!id){if(p.lat==null)return null;let bd=99;Object.keys(KC).forEach(k=>{if(/^(NNK|SI|SKA|IZ|RT)$/.test(k))return;const d=hv(p,{lat:KC[k][0],lng:KC[k][1]});if(d<bd){bd=d;id=k}});km=bd}
+ return id?[id,km]:null}
+function rtFind(a,b){
+ const adj={};const add=(x,y,l)=>{(adj[x]=adj[x]||[]).push([y,l])};
+ KL.forEach(l=>{const r=l[3];for(let i=0;i<r.length-1;i++){add(r[i],r[i+1],l[0]);add(r[i+1],r[i],l[0])}});
+ KWALK.forEach(w=>{add(w[0],w[1],'W');add(w[1],w[0],'W')});
+ const dist={},prev={},key=(n,l)=>n+'|'+l;let q=[[0,a,'']];dist[key(a,'')]=0;let end=null;
+ while(q.length){q.sort((x,y)=>x[0]-y[0]);const[c,n,l]=q.shift(),k=key(n,l);if(c>dist[k])continue;if(n===b){end=k;break}
+  (adj[n]||[]).forEach(([m,L])=>{const cost=c+(L==='W'?10:1+(l&&l!==L?10:0)),nl=L==='W'?'':L,nk=key(m,nl);
+   if(dist[nk]==null||cost<dist[nk]){dist[nk]=cost;prev[nk]=[k,n,L];q.push([cost,m,nl])}})}
+ if(!end)return null;
+ const st=[];let k=end;while(prev[k]){const[pk,pn,L]=prev[k];st.unshift({from:pn,to:k.split('|')[0],L});k=pk}
+ const segs=[];st.forEach(e=>{const t=segs[segs.length-1];if(t&&t.L===e.L&&e.L!=='W')t.nodes.push(e.to);else segs.push({L:e.L,nodes:[e.from,e.to]})});
+ const nodes=[a];segs.forEach(sg=>sg.nodes.slice(1).forEach(n=>nodes.push(n)));
+ return {segs,nodes}}
+function rtOpts(sel){
+ const P=PLACES.map((p,i)=>({p,i,r:plNode(p)})).filter(o=>o.r&&!/^(NNK|SI|SKA|IZ|RT)$/.test(o.r[0]));
+ const S=Object.keys(KN).sort((x,y)=>kname(x).localeCompare(kname(y),'ko'));
+ return `<option value="">고르세요</option><optgroup label="내 장소">${P.map(o=>`<option value="p${o.i}"${sel==='p'+o.i?' selected':''}>${o.p.home?'🏨 ':''}${esc(o.p.n.slice(0,14))} · ${esc(kname(o.r[0]))}역</option>`).join('')}</optgroup><optgroup label="역 이름으로">${S.map(id=>`<option value="s${id}"${sel==='s'+id?' selected':''}>${esc(kname(id))}${id==='KX'?'':'역'}</option>`).join('')}</optgroup>`}
+function rtSel(el){const v=($(el)||{}).value||'';if(!v)return null;
+ if(v[0]==='s')return {id:v.slice(1),label:kname(v.slice(1))+(v.slice(1)==='KX'?'':'역'),km:0,p:null};
+ const p=PLACES[+v.slice(1)];if(!p)return null;const r=plNode(p);return r?{id:r[0],label:(p.home?'숙소':p.n),km:r[1],p}:null}
+const wmin=km=>Math.max(1,Math.ceil(km*1000*1.3/80));
+function rtGo(){
+ const A=rtSel('#rtA'),B=rtSel('#rtB'),box=$('#rtres');if(!box)return;
+ if(!A||!B){box.innerHTML='<p class="hint" style="margin:0">출발과 도착을 모두 골라 주세요.</p>';return}
+ const walk=(who,x,end)=>x.p&&x.km>0.15?`<li>🚶 ${end?`<b>${esc(kname(x.id))}${x.id==='KX'?'':'역'}</b> → ${esc(x.label)}`:`${esc(x.label)} → <b>${esc(kname(x.id))}${x.id==='KX'?'':'역'}</b>`} <small>걸어서 약 ${wmin(x.km)}분${x.km>1.5?' · 역에서 좀 멀어요':''} (직선 거리로 어림한 값)</small></li>`:'';
+ if(A.id===B.id){kR=null;$('#kin').innerHTML=krSvg();box.innerHTML=`<div class="rtr"><b>같은 역이 가까워요</b><p class="hint" style="margin:6px 0 0">두 곳 모두 ${esc(kname(A.id))}${A.id==='KX'?'':'역'} 근처라 지하철 없이 걸어서 갈 수 있어요.</p></div>`;kHome();return}
+ const R=rtFind(A.id,B.id);
+ if(!R){kR=null;box.innerHTML='<p class="hint" style="margin:0">이 약도로는 길을 못 찾았어요. 구글 지도로 확인해 주세요.</p>';return}
+ kR=R;$('#kin').innerHTML=krSvg(R);kFit(R.nodes);
+ const rides=R.segs.filter(x=>x.L!=='W'),tr=Math.max(0,R.segs.length-1);
+ const stops=rides.filter(x=>x.L!=='NK').reduce((n,x)=>n+x.nodes.length-1,0);
+ let i=0;const lis=R.segs.map(sg=>{
+  if(sg.L==='W')return `<li>🚶 <b>걸어서 환승</b>: ${esc(kname(sg.nodes[0]))} → ${esc(kname(sg.nodes[1]))} <small>${sg.nodes.includes('NNK')?'지하철 개찰구를 나와 난카이 난바역으로 걸어가 다시 들어가요':'역 사이를 걸어서 옮겨요 (표지판 따라가기)'}</small></li>`;
+  i++;const l=kLine(sg.L),r=l[3],i0=r.indexOf(sg.nodes[0]),i1=r.indexOf(sg.nodes[sg.nodes.length-1]),term=i1>i0?r[r.length-1]:r[0];
+  const mid=sg.nodes.slice(1,-1).map(kname);
+  return `<li><span class="stc" style="background:${l[2]}">${l[0]}</span> <b>${esc(l[1].replace(' (공항)',''))}</b> 타기 <small>${esc(kname(term))} 방면</small><br>${esc(kname(sg.nodes[0]))} → <b>${esc(kname(sg.nodes[sg.nodes.length-1]))}</b>${sg.L==='NK'?' <small>· 열차 종류(급행·라피트 등)에 따라 정차역이 달라요</small>':` · ${sg.nodes.length-1}정거장`}${mid.length&&sg.L!=='NK'?`<br><small>지나는 역: ${esc(mid.join(', '))}</small>`:''}</li>`}).join('');
+ const gm=B.p&&B.p.lat!=null?`<a class="btn ln" style="margin-top:10px" target="_blank" rel="noopener" href="${esc(gmap(B.p))}">구글 지도로 정확한 시간·요금 보기 ↗</a>`:'';
+ box.innerHTML=`<div class="rtr"><b>${tr?'갈아타기 '+tr+'번':'갈아타지 않아요'}</b>${stops?' · 지하철 '+stops+'정거장':''}<ol>${walk('a',A,0)}${lis}${walk('b',B,1)}</ol><p class="hint" style="margin:6px 0 0">환승이 가장 적은 길이에요. 시간·요금은 몰라요. 약도 기준이라 실제와 다를 수 있어요.</p>${gm}</div>`;
+ box.scrollIntoView({behavior:'smooth',block:'nearest'})}
+function rtSwap(){const a=$('#rtA'),b=$('#rtB');if(!a||!b)return;const t=a.value;a.value=b.value;b.value=t;rtGo()}
+function rtSet(a,b){const x=$('#rtA'),y=$('#rtB');if(x)x.value=a;if(y)y.value=b;rtGo()}
+const hotelIdx=()=>PLACES.findIndex(p=>p.home);
+function krMap(a,b){
+ kR=null;const hi=hotelIdx(),A0=a||(hi>=0?'p'+hi:'');
+ openOv(`<div class="ph2"><b>한글 노선도 · 길찾기</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="rtp"><div><label for="rtA">출발</label><select id="rtA" onchange="rtGo()">${rtOpts(A0)}</select></div><div><label for="rtB">도착</label><select id="rtB" onchange="rtGo()">${rtOpts(b||'')}</select></div></div>
+ <div class="rtb"><button class="btn ln" onclick="rtSwap()">⇅ 출발·도착 바꾸기</button><button class="btn ln" onclick="rtSet('sKX','p${hi}')">✈️ 공항 → 숙소</button><button class="btn ln" onclick="rtSet('p${hi}','sKX')">🛫 숙소 → 공항</button></div>
  <div class="mzb"><button class="btn ln" onclick="kZoomBtn(1/1.5)" aria-label="작게">－ 작게</button><span id="kzl">3배</span><button class="btn" onclick="kZoomBtn(1.5)" aria-label="크게">＋ 크게</button></div>
  <div id="kvw" class="mvw kvw" style="background:#fff;color:#222;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;position:relative"><div id="kin" style="width:100%;transform-origin:0 0">${krSvg()}</div></div>
+ <div id="rtres" style="margin-top:10px"></div>
  <p class="hint" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:8px">${KL.map(l=>`<span><span class="stc" style="background:${l[2]}">${l[0]}</span> ${l[1]}</span>`).join('')}</p>
- <p class="hint"><button class="btn ln" style="padding:6px 12px" onclick="kHome()">🏨 숙소 쪽으로</button><br>손가락(마우스)으로 끌면 움직이고, 두 손가락을 벌리거나 마우스 휠을 굴리면 커져요. 두 번 누르면 확대돼요. 굵은 글씨는 큰 환승역이에요. 거리와 모양은 대략이라 실제와 달라요.</p>`);
- kBind();kHome();
-}
+ <p class="hint"><button class="btn ln" style="padding:6px 12px;min-height:38px" onclick="kR=null;$('#kin').innerHTML=krSvg();kHome()">🏨 숙소 쪽으로 · 경로 지우기</button><br>끌면 움직이고, 두 손가락(마우스 휠)으로 크기를 바꿔요. 두 번 누르면 확대돼요. 거리와 모양은 대략이라 실제와 달라요.</p>`);
+ kBind();kHome();if(a&&b)rtGo()}
 /* 한국어 역 이름표 — 오사카 메트로 공식 노선도에서 확인한 역 번호 */
 const LINES=[['M','미도스지선','#E5171F'],['Y','요쓰바시선','#0079C2'],['C','주오선','#019A66'],['T','다니마치선','#522886'],['S','센니치마에선','#E96FA7'],['K','사카이스지선','#814721'],['N','나가호리쓰루미료쿠치선','#A9CC51']];
 const STN=[
