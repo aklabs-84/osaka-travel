@@ -343,7 +343,6 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <h2 class="sec fh" id="thw"><span id="th">오늘의 길</span><button class="fold" id="tf" onclick="foldTog('t')"></button></h2>
   <div class="tl" id="tl"></div>
   <div id="un"></div>
-  <div class="ft"></div>
 </section>
 
 <section class="pane" id="p2">
@@ -1757,7 +1756,7 @@ async function impGo(){
 }
 function offCard(){
  const t=store.get('off',null);
- $('#offc').innerHTML=`<div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📴 인터넷 없이 쓰기</b><p class="hint" style="margin:6px 0 10px">와이파이일 때 한 번 눌러 두면, 일본에서 데이터가 없어도 일정·회화·가계부와 오사카 지도(큰 길·역 이름)가 열려요. 약 10MB예요.</p><button class="btn big" style="width:100%" id="offb" onclick="offPrep()">지도 미리 받기</button><p class="hint" id="offs" style="margin:8px 0 0">${t?'✅ '+esc(t.d)+' 받아 둠 ('+t.mb+'MB)':'아직 안 받았어요'}</p><p class="hint" style="margin:8px 0 0">💡 길 안내까지 필요하면 구글 지도 앱에서 오사카를 <b>오프라인 지도</b>로 저장해 두세요.</p></div>`;
+ $('#offc').innerHTML=`<div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📴 인터넷 없이 쓰기</b><p class="hint" style="margin:6px 0 10px">와이파이일 때 한 번 눌러 두면, 일본에서 데이터가 없어도 일정·회화·가계부와 이 앱 안의 <b>지도 탭</b>(큰 길·역 이름)이 열려요. 약 10MB예요. <b>구글 지도를 내려받는 버튼이 아니에요.</b></p><button class="btn big" style="width:100%" id="offb" onclick="offPrep()">📥 이 앱의 오사카 지도 미리 받기</button><p class="hint" id="offs" style="margin:8px 0 0">${t?'✅ '+esc(t.d)+' 받아 둠 ('+t.mb+'MB)':'아직 안 받았어요 (이 앱의 지도 탭용)'}</p><p class="hint" style="margin:8px 0 0">💡 길 안내까지 필요하면 구글 지도 앱에서 오사카를 <b>오프라인 지도</b>로 저장해 두세요.</p></div>`;
 }
 let offBusy=false;
 async function offPrep(){
