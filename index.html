@@ -311,6 +311,7 @@ nav.tabs button.on{color:var(--sea2)}nav.tabs button.on span{transform:translate
 nav.tabs button:after{content:"";position:absolute;left:30%;right:30%;top:0;height:4px;border-radius:0 0 4px 4px;background:var(--sun);transform:scaleX(0);transition:transform .2s}
 nav.tabs button.on:after{transform:scaleX(1)}
 .rv{opacity:0;transform:translateY(14px);transition:opacity .45s,transform .45s}.rv.in{opacity:1;transform:none}
+#askbg{display:none;position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px}#askbg.on{display:flex}.askbox{background:var(--bg);color:var(--tx);border-radius:16px;padding:22px 18px 16px;width:100%;max-width:340px;box-shadow:0 10px 40px rgba(0,0,0,.35)}.askbox p{font-size:18px;font-weight:800;line-height:1.5;text-align:center;margin:4px 0 18px;word-break:keep-all}.askbt{display:flex;gap:10px}.askbt .btn{flex:1;padding:10px 6px;white-space:nowrap}.askok{background:#C0392B;color:#fff}:root[data-theme=dark] .askok{color:#fff}
 #gt{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;background:var(--tx);color:var(--bg);border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #gt.on{opacity:1}
 </style>
@@ -415,6 +416,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
 <div id="sheet"></div>
 <div id="ov"><div class="inner" id="ovin"></div></div>
 <div id="gt"></div>
+<div id="askbg" onclick="askNo()"><div class="askbox" onclick="event.stopPropagation()" role="alertdialog" aria-modal="true"><p id="askmsg"></p><div class="askbt"><button class="btn ln" onclick="askNo()">그만둘래요</button><button class="btn askok" id="askok" onclick="askYes()">지우기</button></div></div></div>
 
 <nav class="tabs">
   <button class="on" data-i="0"><span>🌤️</span>오늘</button>
@@ -595,6 +597,10 @@ const GUIDE=[
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fixUrl=u=>/^https?:\/\//i.test(u)?u:'https://'+u;
+let askFn=null;
+function ask(msg,fn,ok){$('#askmsg').textContent=msg;$('#askok').textContent=ok||'지우기';askFn=fn;$('#askbg').classList.add('on')}
+function askNo(){askFn=null;$('#askbg').classList.remove('on')}
+function askYes(){const f=askFn;askNo();if(f)f()}
 function gtoast(t){const e=$('#gt');e.textContent=t;e.classList.add('on');clearTimeout(gtoast.t);gtoast.t=setTimeout(()=>e.classList.remove('on'),2400)}
 
 /* ---------- 저장된 내용 불러오기 ---------- */
@@ -762,7 +768,7 @@ const PACK0=['여권(유효기간 확인)','항공권·e티켓 캡처','비지�
 const packList=()=>Array.isArray(INFO.pack)?INFO.pack:PACK0.map((t,i)=>['k'+i,t,0]);
 function packSave(a){INFO.pack=a;store.set('info',INFO);pkList()}
 function pkTog(id){packSave(packList().map(m=>m[0]===id?[m[0],m[1],m[2]?0:1]:m))}
-function pkDel(id){if(!confirm('이 물건을 목록에서 지울까요?'))return;packSave(packList().filter(m=>m[0]!==id))}
+function pkDel(id){ask('이 물건을 목록에서 지울까요?',()=>packSave(packList().filter(m=>m[0]!==id)))}
 function pkAdd(){const i=$('#pki'),v=(i.value||'').trim().slice(0,30);if(!v){gtoast('챙길 물건을 적어 주세요');return}const a=packList().slice();if(a.length>=80){gtoast('80개까지 넣을 수 있어요');return}a.push(['p'+Date.now(),v,0]);i.value='';packSave(a);i.focus()}
 function pkReset(){if(!confirm('체크를 모두 풀까요? (목록은 그대로예요)'))return;packSave(packList().map(m=>[m[0],m[1],0]))}
 function pkList(){
@@ -784,10 +790,9 @@ function mtSave(){
  else{if(a.length>=60){gtoast('할 일은 60개까지 넣을 수 있어요');return}a.push(['c'+Date.now(),v,DAYS[day].k])}
  INFO.todos=a;store.set('info',INFO);mtOpen=false;mtEdit=null;mustRender();gtoast('저장했어요');
 }
-function mtDel(id){
- if(!confirm('이 할 일을 지울까요?'))return;
+function mtDel(id){ask('이 할 일을 지울까요?',()=>{
  INFO.todos=myTodos().filter(m=>m[0]!==id);done.delete(id);store.set('done',[...done]);store.set('info',INFO);mustRender();
-}
+})}
 function render(){
  const d=DAYS[day];
  $('#mh').textContent=d.k==='pre'?'꼭 해야 하는 일':'이날 꼭 할 일';
@@ -1005,9 +1010,10 @@ function saveSheet(){
 function delPlace(id){
  id=id||draft._edit;const q=PLACES.find(x=>x.id===id);
  if(!q||q.home){gtoast('숙소는 지울 수 없어요');return}
- if(!confirm('「'+q.n+'」을(를) 지울까요?'))return;
- const i=PLACES.indexOf(q);PLACES.splice(i,1);
- savePlaces();closeSheet();afterChange(null);gtoast('지웠어요');
+ ask('「'+q.n+'」을(를) 지울까요?',()=>{
+  const i=PLACES.indexOf(q);if(i<0)return;PLACES.splice(i,1);
+  savePlaces();closeSheet();afterChange(null);gtoast('지웠어요');
+ });
 }
 /* 지도에서 직접 고르기 */
 let prevLab=false;
@@ -1263,7 +1269,7 @@ function qrPick(f){
  };im.onerror=()=>gtoast('사진을 읽지 못했어요');im.src=r.result};
  r.readAsDataURL(f);
 }
-function qrDel(){if(confirm('저장한 입국 QR을 지울까요?')){store.set('qr','');infoHTML();gtoast('지웠어요')}}
+function qrDel(){ask('저장한 입국 QR을 지울까요?',()=>{store.set('qr','');infoHTML();gtoast('지웠어요')})}
 function qrShow(){
  const q=store.get('qr','');if(!q)return;
  openOv(`<div class="ph2"><b>입국 QR</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
