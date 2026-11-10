@@ -1001,7 +1001,7 @@ async function gmapGo(){
   let u=raw;
   if(!/google\.[a-z.]+\/maps/i.test(u)||!/@-?\d|!3d/.test(u)){
    const c=syncCfg();
-   if(!c.on||!c.url||!c.code){gtoast('짧은 링크는 정보 탭에서 "같이 쓰기"를 연결해야 풀어요. 긴 링크를 쓰거나 이름으로 찾아 주세요');return}
+   if(!c.url||!c.code){gtoast('짧은 링크는 내 정보 → 같이 쓰기 → 구글 시트를 연결해야 풀어요. 긴 링크를 쓰거나 이름으로 찾아 주세요');return}
    const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'resolve',url:raw}),redirect:'follow'});
    const j=await r.json();
    if(!j.ok)throw new Error(j.error||'fail');
@@ -1160,7 +1160,7 @@ async function metroOv(){
 }
 async function metroSave(){
  const c=syncCfg(),b=$('#mfb');
- if(!c.on||!c.url||!c.code){gtoast('저장하려면 내 정보의 "같이 쓰기"를 먼저 연결해 주세요. 아니면 아래 "그림 파일 직접 넣기"를 써 주세요');return}
+ if(!c.url||!c.code){gtoast('저장하려면 내 정보 → 같이 쓰기 → 구글 시트를 먼저 연결해 주세요. 아니면 아래 "그림 파일 직접 넣기"를 써 주세요');return}
  const t0=b.textContent;b.disabled=true;b.textContent='받는 중…';
  try{
   const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'file',url:METRO_IMG}),redirect:'follow'});
@@ -1362,7 +1362,7 @@ const exName=c=>{const k=EXK.find(x=>x[0]===c)||EXK[4];return k[1]+' '+k[2]};
 let exc='food';
 function exkHTML(){$('#exk').innerHTML=EXK.map(k=>`<button class="${exc===k[0]?'on':''}" aria-pressed="${exc===k[0]}" onclick="exc='${k[0]}';exkHTML()">${k[1]} ${k[2]}</button>`).join('')}
 /* 영수증 찍기: 사진을 작게 줄여 중계소(Apps Script)에 보내고, 받은 값을 칸에 채운다(저장은 사용자가 '기록'을 눌러서) */
-function scanPick(){const c=syncCfg();if(!c.on||!c.url||!c.code){gtoast('먼저 정보 탭에서 "같이 쓰기"를 연결해 주세요');return}if(!navigator.onLine){gtoast('인터넷이 있어야 읽을 수 있어요. 직접 입력해 주세요');return}$('#scani').click()}
+function scanPick(){const c=syncCfg();if(!c.url||!c.code){gtoast('먼저 내 정보 → 같이 쓰기 → 구글 시트를 연결해 주세요');return}if(!navigator.onLine){gtoast('인터넷이 있어야 읽을 수 있어요. 직접 입력해 주세요');return}$('#scani').click()}
 function shrinkImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=1400,k=Math.min(1,m/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);ok(cv.toDataURL('image/jpeg',0.72).split(',')[1])};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('img'))};im.src=u})}
 async function scanGo(inp){
  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
@@ -1591,36 +1591,73 @@ function reportDoc(){
  const I=INFO,info=[['숙소 이름',I.hotelKo],['숙소 영문 이름',I.hotelEn],['숙소 주소',I.addr],['숙소 전화',I.phone],['체크인',I.inDate],['체크아웃',I.outDate],['가는 편명',I.fOutNo],['가는 편 도착 터미널',I.fOutTerm?I.fOutTerm+'터미널':''],['가는 편 도착 시간',I.fOutTime],['오는 편명',I.fBackNo],['오는 편 출발 터미널',I.fBackTerm?I.fBackTerm+'터미널':''],['오는 편 출발 시간',I.fBackTime]];
  return {plan,places,ex,cats:EXK.map(k=>k[2]),rate:Math.round(I.rate*100),todo,info,title:'오사카 여행 ('+I.inDate+' ~ '+I.outDate+')'};
 }
+/* ---------- 슈퍼베이스 동기화: 바뀐 항목만 올리고, 새 것만 받는다 ---------- */
+const SB_URL='https://eyjiqepgcjhtytserrlp.supabase.co',SB_KEY='sb_publishable_Vu7hE7D7Z3uVbEeRIoW4OQ__mHe36St';   /* 공개해도 되는 키(표는 잠겨 있고 여행 코드로만 열림) */
+async function sbRpc(fn,args){
+ const ac=new AbortController(),to=setTimeout(()=>ac.abort(),20000);
+ try{
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args),signal:ac.signal});
+  if(!r.ok)throw new Error('http'+r.status);
+  const t=await r.text();return t?JSON.parse(t):null;
+ }catch(e){throw new Error(ac.signal.aborted?'timeout':(/^http/.test(e.message)?e.message:'net'))}
+ finally{clearTimeout(to)}
+}
 async function syncNow(manual){
  const c=syncCfg();
- if(!c.on||!c.url||!c.code)return;
- if(syncing){if(manual){syncUiOn=true;syncUi('up')}else syncAgain=true;return}   /* 이미 맞추는 중이면 그 진행을 화면에 보여줌 */
+ if(!c.on||!c.trip)return;
+ if(syncing){if(manual){syncUiOn=true;syncUi('up')}else syncAgain=true;return}
  syncing=true;syncAgain=false;syncMsg='';
- let changed=false,okUi=false;
+ let changed=false,okUi=false,pushed=0;
  const mark=()=>{changed=true};syncNow.mark=mark;
  const ui=s=>{if(manual||syncUiOn)syncUi(s)};
  try{
   ui('up');
   if(!navigator.onLine)throw new Error('offline');
-  const sent=JSON.stringify(syncLocalDoc());
-  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),45000);   /* 45초 넘게 답이 없으면 끊기 */
-  let r;try{r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,doc:JSON.parse(sent),rep:reportDoc()}),redirect:'follow',signal:ac.signal})}catch(e2){throw new Error(ac.signal.aborted?'timeout':'net')}finally{clearTimeout(to)}
-  const j=await r.json();
-  if(!j.ok)throw new Error(j.error||'fail');
-  ui('down');if(manual||syncUiOn)await new Promise(r=>setTimeout(r,700));   /* 너무 빨리 사라지지 않게 */
+  const loc=syncLocalDoc(),sent=JSON.stringify(loc),base=store.get('syncbase',null)||{},rows=[];
+  Object.keys(loc).forEach(cat=>Object.keys(loc[cat]).forEach(k=>{const e=loc[cat][k],b=(base[cat]||{})[k];if(!b||b.v!==e.v||b.u!==e.u)rows.push({c:cat,k,v:e.v,u:e.u})}));
+  for(let i=0;i<rows.length;i+=400)await sbRpc('trip_push',{p_trip:c.trip,p_rows:rows.slice(i,i+400)});
+  pushed=rows.length;
+  ui('down');
+  const got=await sbRpc('trip_pull',{p_trip:c.trip,p_since:c.since||null})||[];
+  const D=JSON.parse(sent);let since=c.since||null,need=false;
+  got.forEach(r=>{
+   D[r.c]=D[r.c]||{};const l=D[r.c][r.k],b=(base[r.c]||{})[r.k];
+   if(!l||r.u>=l.u)D[r.c][r.k]={v:r.v,u:r.u};
+   if(!b||b.v!==r.v||b.u!==r.u)need=true;
+   if(!since||r.ts>since)since=r.ts;
+  });
+  if(manual||syncUiOn)await new Promise(r=>setTimeout(r,500));
   if(changed||JSON.stringify(syncLocalDoc())!==sent){syncAgain=true}   /* 보내는 동안 또 고쳤으면 덮지 않고 다시 */
-  else syncApply(j.doc);
-  const n=syncCfg();n.last=Date.now();if(typeof j.sheet==='string'&&SHEET_RE.test(j.sheet)){n.sheet=j.sheet;n.sheetFor=c.url}store.set('sync',n);syncMsg='';
-  okUi=true;sheetBtn();
+  else if(need)syncApply(D);
+  else store.set('syncbase',D);
+  const n=syncCfg();n.last=Date.now();n.since=since;store.set('sync',n);syncMsg='';
+  okUi=true;
+  if(pushed&&n.url&&n.code)sheetSoon();   /* 바꾼 폰이 시트 보고서를 새로 그려 달라고 부탁 */
   if(manual||syncUiOn)gtoast('동기화했어요');
  }catch(e){
-  syncMsg=e.message==='code'?'비밀 코드가 달라요':(e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':(e.message==='timeout'?'답이 너무 늦어요(45초). 잠시 뒤 다시 눌러 주세요':'연결이 안 돼요. 주소와 코드를 확인해 주세요'));
+  syncMsg=e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':(e.message==='timeout'?'답이 너무 늦어요. 잠시 뒤 다시 눌러 주세요':(e.message==='http400'?'여행 코드가 이상해요. 다시 확인해 주세요':'연결이 안 돼요. 잠시 뒤 다시 해 주세요'));
   if(manual||syncUiOn)gtoast(syncMsg);
  }
  syncing=false;syncNow.mark=null;
  if(manual||syncUiOn)syncUi(okUi?'ok':'err');syncUiOn=false;
  syncStatus();
  if(syncAgain)setTimeout(()=>syncNow(),300);
+}
+/* 여행 보고서를 구글 시트(Apps Script)로 보내기 — 보기용, 시트에서 고쳐도 앱엔 안 돌아와요 */
+let sheetTimer=null;
+function sheetSoon(){clearTimeout(sheetTimer);sheetTimer=setTimeout(()=>sheetSend(false),30000)}
+async function sheetSend(manual){
+ const c=syncCfg();
+ if(!c.url||!c.code){if(manual)gtoast('먼저 시트 주소와 비밀 코드를 넣어 주세요');return}
+ if(!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(c.url.trim())){if(manual)gtoast('주소가 이상해요. /exec 로 끝나는 주소를 넣어 주세요');return}
+ const b=$('#sh-btn'),t0=b&&b.textContent;if(manual&&b){b.disabled=true;b.textContent='보내는 중…'}
+ try{
+  const r=await fetch(c.url.trim(),{method:'POST',body:JSON.stringify({k:c.code.trim(),rep:reportDoc()}),redirect:'follow'});
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'fail');
+  if(typeof j.sheet==='string'&&SHEET_RE.test(j.sheet)){const n=syncCfg();n.sheet=j.sheet;n.sheetFor=c.url;store.set('sync',n)}
+  sheetBtn();if(manual)gtoast(j.rerr?'시트를 그리다 문제가 있었어요':'시트로 보냈어요');
+ }catch(e){if(manual)gtoast('시트에 보내지 못했어요. 주소와 코드를 확인해 주세요')}
+ if(manual&&b){b.disabled=false;b.textContent=t0}
 }
 function syncUi(s){
  const b=$('#sy-btn'),bar=$('#sy-bar'),st=$('#sy-st');if(!b)return;
@@ -1631,7 +1668,7 @@ function syncUi(s){
  if(busy&&st){st.textContent=t;st.style.color=''}
  clearTimeout(syncUi.t);if(s==='ok'||s==='err')syncUi.t=setTimeout(()=>syncUi('idle'),1600);
 }
-function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(),4000)}
+function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(),1500)}
 (function(){
  const _set=store.set;
  store.set=function(k,v){_set.call(store,k,v);if(!syncApplying&&SYNC_KEYS.includes(k)){if(syncNow.mark)syncNow.mark();syncSoon()}};
@@ -1643,27 +1680,40 @@ function syncStatus(){
 }
 function syncSet(k,v){const c=syncCfg();c[k]=v;if(k==='url'&&v.trim()!==(c.sheetFor||''))c.sheet='';store.set('sync',c);if(k==='url')sheetBtn()}
 const SHEET_RE=/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/;
-function sheetBtn(){const e=$('#sy-sheet');if(!e)return;const c=syncCfg();e.innerHTML=c.on&&c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}
-function syncToggle(on){
- const c=syncCfg();
- if(on&&(!c.url||!c.code)){gtoast('주소와 비밀 코드를 먼저 넣어 주세요');infoHTML();return}
- if(on&&!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(c.url.trim())){gtoast('주소가 이상해요. /exec 로 끝나는 주소를 넣어 주세요');infoHTML();return}
- c.on=on;c.url=c.url.trim();c.code=c.code.trim();store.set('sync',c);infoHTML();
- if(on)syncNow(true);
+function sheetBtn(){const e=$('#sy-sheet');if(!e)return;const c=syncCfg();e.innerHTML=c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}
+function tripGen(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(20);crypto.getRandomValues(b);let t='';b.forEach((x,i)=>{if(i&&i%5===0)t+='-';t+=A[x%A.length]});return t}
+function tripStart(code){
+ const c=syncCfg();c.trip=code;c.on=true;c.since=null;c.last=0;store.set('sync',c);store.set('syncbase',null);
+ infoHTML();syncNow(true);
 }
+function syncMake(){tripStart(tripGen())}
+function syncJoin(){
+ const t=(($('#sy-join')||{}).value||'').trim().toUpperCase().replace(/\s+/g,'');
+ if(!/^[A-Z0-9-]{16,64}$/.test(t)){gtoast('여행 코드를 다시 확인해 주세요 (예: AB3CD-EF4GH-…)');return}
+ tripStart(t);
+}
+function syncOff(){const c=syncCfg();c.on=false;store.set('sync',c);infoHTML()}
+function tripCopy(){const c=syncCfg();try{navigator.clipboard.writeText(c.trip).then(()=>gtoast('코드를 복사했어요'),()=>gtoast('복사하지 못했어요. 직접 적어 주세요'))}catch(e){gtoast('복사하지 못했어요. 직접 적어 주세요')}}
 function syncCard(){
- const c=syncCfg();
+ const c=syncCfg(),on=c.on&&c.trip;
  return `<div class="card"><h3>👫 동행자와 같이 쓰기</h3>
- <p class="hint" style="margin:-4px 0 12px">두 폰이 같은 일정·가계부·체크 표시를 봐요. 여권·비상 연락·입국 QR은 올라가지 않아요. 처음 한 번만 설정하면 돼요.</p>
- <div class="fl"><span>구글 시트 주소</span><div class="fr"><input id="sy-url" type="url" value="${esc(c.url)}" oninput="syncSet('url',this.value)" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
- <div class="fl"><span>비밀 코드</span><div class="fr"><input id="sy-code" type="password" autocomplete="off" value="${esc(c.code)}" oninput="syncSet('code',this.value)" placeholder="시트에 적은 비밀 코드"></div></div>
- <div class="act" style="margin-bottom:8px">${c.on?`<button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="syncToggle(false)">끄기</button>`:`<button class="btn big" onclick="syncToggle(true)">같이 쓰기 켜기</button>`}</div>
- <div class="act" id="sy-sheet" style="margin-bottom:8px">${c.on&&c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}</div>
- <p class="hint" id="sy-st" style="margin:0 0 12px"></p></div>`;
+ <p class="hint" style="margin:-4px 0 12px">두 폰이 같은 일정·가계부·체크 표시를 바로바로 봐요. 여권·비상 연락·입국 QR은 올라가지 않아요.</p>
+ ${on?`<div class="fl"><span>우리 여행 코드</span><div class="fr"><input id="sy-trip" readonly value="${esc(c.trip)}" style="font-family:ui-monospace,monospace;letter-spacing:.5px" onclick="this.select()"></div></div>
+ <p class="hint" style="margin:0 0 10px">동행자 폰에서 “이미 코드가 있어요”에 이 코드를 넣으면 연결돼요. 코드를 아는 사람은 누구나 볼 수 있으니 단체방 같은 곳엔 올리지 마세요.</p>
+ <div class="act" style="margin-bottom:8px"><button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="tripCopy()">코드 복사</button><button class="btn ln big" onclick="syncOff()">끄기</button></div>`
+ :`<div class="act" style="margin-bottom:10px"><button class="btn big" onclick="syncMake()">새 여행 코드 만들기</button></div>
+ <div class="fl"><span>이미 코드가 있어요</span><div class="fr"><input id="sy-join" value="${esc(c.trip||'')}" autocomplete="off" autocapitalize="characters" placeholder="동행자에게 받은 코드"><button class="btn ln" onclick="syncJoin()">연결</button></div></div>`}
+ <p class="hint" id="sy-st" style="margin:0 0 4px"></p></div>
+ <div class="card"><h3>📊 구글 시트로 보고서 보기 <small style="font-weight:400;color:var(--mut)">(선택)</small></h3>
+ <p class="hint" style="margin:-4px 0 12px">일정·장소·가계부를 보기 좋은 표로 시트에 그려 줘요. 시트에서 고쳐도 앱엔 반영되지 않아요. 영수증 읽기·구글 지도 링크 풀기·지하철 노선도도 이 연결을 써요.</p>
+ <div class="fl"><span>구글 시트 주소</span><div class="fr"><input id="sy-url" type="url" value="${esc(c.url||'')}" oninput="syncSet('url',this.value)" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
+ <div class="fl"><span>비밀 코드</span><div class="fr"><input id="sy-code" type="password" autocomplete="off" value="${esc(c.code||'')}" oninput="syncSet('code',this.value)" placeholder="시트에 적은 비밀 코드"></div></div>
+ <div class="act" style="margin-bottom:8px"><button class="btn big" id="sh-btn" onclick="sheetSend(true)">시트로 보내기</button></div>
+ <div class="act" id="sy-sheet" style="margin-bottom:0">${c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}</div></div>`;
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();const n=new Date().toDateString();if(n!==lastDay){lastDay=n;dd();const t=todayIdx();if(t>=0)setDay(t);else days()}}});
 window.addEventListener('online',()=>syncNow());
-setInterval(()=>{if(!document.hidden)syncNow()},90000);
+setInterval(()=>{if(!document.hidden)syncNow()},15000);   /* 화면이 보일 때만 15초마다 '새 거 있나?' 가볍게 확인 */
 setTimeout(()=>syncNow(),1500);
 
 
@@ -1730,7 +1780,7 @@ async function impLink(){
  const raw=($('#impl').value||'').trim(),m=/https?:\/\/\S+/.exec(raw);
  if(!m){gtoast('구글 지도에서 복사한 목록 링크를 붙여 넣어 주세요');return}
  const c=syncCfg();
- if(!c.on||!c.url||!c.code){gtoast('링크로 가져오려면 아래 "같이 쓰기"를 먼저 연결해 주세요');return}
+ if(!c.url||!c.code){gtoast('링크로 가져오려면 내 정보 → 같이 쓰기 → 구글 시트를 먼저 연결해 주세요');return}
  const b=$('#impb'),t0=b.textContent;b.disabled=true;b.textContent='읽는 중…';
  try{
   const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'list',url:m[0]}),redirect:'follow'});
