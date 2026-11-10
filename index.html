@@ -1172,7 +1172,6 @@ const KL=[['M','미도스지선','#E5171F',['SO','NN','NK','UM','YD','HM','SS','
  ['C','주오선','#019A66',['YU','CS','OK','AS','BT','KJ','AW','HM','SH','T4','MR','MD','FK','TK']],
  ['S','센니치마에선','#E96FA7',['ND','TG','AW','NG','SK','NB','NP','T9','TS']],
  ['K','사카이스지선','#814721',['TJ','OG','MM','KH','SH','NH','NP','EB','DB','TG2']]];
-let kZ=3;
 function krSvg(){
  const cnt={},seg={};KL.forEach(l=>{l[3].forEach(n=>cnt[n]=(cnt[n]||0)+1);for(let i=0;i<l[3].length-1;i++){const k=[l[3][i],l[3][i+1]].sort().join('-');(seg[k]=seg[k]||[]).push(l[0])}});
  let g='',lab='',dots='';
@@ -1192,15 +1191,35 @@ function krSvg(){
  const h=KN.KH;lab+=`<g><circle cx="${h[1]}" cy="${h[2]}" r="16" fill="none" stroke="#F6C945" stroke-width="5"/><rect x="${h[1]-132}" y="${h[2]+14}" width="112" height="26" rx="6" fill="#F6C945" stroke="#222" stroke-width="2"/><text x="${h[1]-76}" y="${h[2]+32}" text-anchor="middle" font-size="15" font-weight="900" fill="#222">🏨 우리 숙소</text></g>`;
  return `<svg viewBox="0 0 1180 1140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오사카 메트로 한글 노선도">${g}${dots}${lab}</svg>`;
 }
-function krMap(z){
- if(z)kZ=Math.max(1,Math.min(5,kZ+z));
- const old=document.querySelector('#kvw'),fx=old?(old.scrollLeft+old.clientWidth/2)/Math.max(1,old.scrollWidth):KN.KH[1]/1180,fy=old?(old.scrollTop+old.clientHeight/2)/Math.max(1,old.scrollHeight):KN.KH[2]/1140;
+let kS=3,kX=0,kY=0;const KMAX=8;
+function kBox(){const w=$('#kvw');return w?[w.clientWidth,w.clientHeight]:[360,500]}
+function kApply(){const[cw,ch]=kBox(),sw=cw*kS,sh=cw*1140/1180*kS;
+ kX=sw<=cw?(cw-sw)/2:Math.min(0,Math.max(cw-sw,kX));kY=sh<=ch?(ch-sh)/2:Math.min(0,Math.max(ch-sh,kY));
+ const n=$('#kin');if(n)n.style.transform='translate('+kX+'px,'+kY+'px) scale('+kS+')';
+ const l=$('#kzl');if(l)l.textContent=(Math.round(kS*10)/10)+'배'}
+function kZoomAt(f,px,py){const ns=Math.max(1,Math.min(KMAX,kS*f)),r=ns/kS;kX=px-(px-kX)*r;kY=py-(py-kY)*r;kS=ns;kApply()}
+function kZoomBtn(f){const[cw,ch]=kBox();kZoomAt(f,cw/2,ch/2)}
+function kHome(){const[cw,ch]=kBox();kS=3;kX=cw/2-KN.KH[1]/1180*cw*kS;kY=ch/2-KN.KH[2]/1140*(cw*1140/1180)*kS;kApply()}
+function kBind(){const w=$('#kvw');if(!w)return;const P=new Map();let t0=0,p0=null,mv=0,lt=0;
+ const pos=e=>{const r=w.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ w.onpointerdown=e=>{try{w.setPointerCapture(e.pointerId)}catch(_){}P.set(e.pointerId,pos(e));if(P.size===1){t0=Date.now();p0=pos(e);mv=0}else mv=99;w.style.cursor='grabbing'};
+ w.onpointermove=e=>{if(!P.has(e.pointerId))return;const o=P.get(e.pointerId),n=pos(e);
+  if(P.size===1){kX+=n[0]-o[0];kY+=n[1]-o[1];mv=Math.max(mv,Math.hypot(n[0]-p0[0],n[1]-p0[1]));P.set(e.pointerId,n);kApply()}
+  else if(P.size===2){const b=[...P.values()];P.set(e.pointerId,n);const a=[...P.values()];
+   const cb=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2],ca=[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2];
+   const db=Math.hypot(b[0][0]-b[1][0],b[0][1]-b[1][1]),da=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);
+   kX+=ca[0]-cb[0];kY+=ca[1]-cb[1];kZoomAt(db>0?da/db:1,ca[0],ca[1])}};
+ const up=e=>{if(!P.has(e.pointerId))return;const was=P.size;P.delete(e.pointerId);if(!P.size)w.style.cursor='grab';
+  if(was===1&&mv<8&&Date.now()-t0<300){const n=Date.now();if(n-lt<350){kZoomAt(kS>=KMAX-.1?1/KMAX:2,p0[0],p0[1]);lt=0}else lt=n}};
+ w.onpointerup=up;w.onpointercancel=up;
+ w.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);kZoomAt(Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0018)),p[0],p[1])},{passive:false})}
+function krMap(){
  openOv(`<div class="ph2"><b>한글 노선도 (오사카 메트로)</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
- <div class="mzb"><button class="btn ln" onclick="krMap(-1)" aria-label="작게">－ 작게</button><span>${kZ}배</span><button class="btn" onclick="krMap(1)" aria-label="크게">＋ 크게</button></div>
- <div id="kvw" class="mvw kvw" style="background:#fff;color:#222"><div style="width:${kZ*100}%">${krSvg()}</div></div>
+ <div class="mzb"><button class="btn ln" onclick="kZoomBtn(1/1.5)" aria-label="작게">－ 작게</button><span id="kzl">3배</span><button class="btn" onclick="kZoomBtn(1.5)" aria-label="크게">＋ 크게</button></div>
+ <div id="kvw" class="mvw kvw" style="background:#fff;color:#222;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;position:relative"><div id="kin" style="width:100%;transform-origin:0 0">${krSvg()}</div></div>
  <p class="hint" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:8px">${KL.map(l=>`<span><span class="stc" style="background:${l[2]}">${l[0]}</span> ${l[1]}</span>`).join('')}</p>
- <p class="hint">손가락으로 끌면 움직여요. 굵은 글씨는 큰 환승역이에요. 거리와 모양은 대략이라 실제와 달라요. 다른 노선은 위 공식 노선도·역 이름표를 써 주세요.</p>`);
- const w=$('#kvw');if(w){w.scrollLeft=fx*w.scrollWidth-w.clientWidth/2;w.scrollTop=fy*w.scrollHeight-w.clientHeight/2}
+ <p class="hint"><button class="btn ln" style="padding:6px 12px" onclick="kHome()">🏨 숙소 쪽으로</button><br>손가락(마우스)으로 끌면 움직이고, 두 손가락을 벌리거나 마우스 휠을 굴리면 커져요. 두 번 누르면 확대돼요. 굵은 글씨는 큰 환승역이에요. 거리와 모양은 대략이라 실제와 달라요.</p>`);
+ kBind();kHome();
 }
 /* 한국어 역 이름표 — 오사카 메트로 공식 노선도에서 확인한 역 번호 */
 const LINES=[['M','미도스지선','#E5171F'],['Y','요쓰바시선','#0079C2'],['C','주오선','#019A66'],['T','다니마치선','#522886'],['S','센니치마에선','#E96FA7'],['K','사카이스지선','#814721'],['N','나가호리쓰루미료쿠치선','#A9CC51']];
