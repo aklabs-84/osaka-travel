@@ -295,7 +295,7 @@ textarea{resize:vertical;line-height:1.5}
 .rtr{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;color:#222;font-size:15px}.rtr ol{margin:8px 0 0;padding:0;list-style:none}.rtr li{padding:8px 0;border-top:1px dashed #ddd;line-height:1.6}.rtr li:first-child{border-top:0}.rtr small{color:#666;font-size:13px}
 .ig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}.ig.q4{grid-template-columns:repeat(4,minmax(0,1fr))}.ihd{font-size:13.5px;font-weight:800;color:var(--sub);margin:0 2px 8px}
 .it{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:92px;padding:10px 4px;background:var(--card);border:2px solid var(--line);border-radius:14px;font:inherit;font-size:14.5px;font-weight:800;color:var(--tx);text-align:center;line-height:1.3;overflow-wrap:anywhere;cursor:pointer;transition:border-color .15s,transform .1s}.ig.q4 .it{font-size:13px}.it .ic{font-size:28px;line-height:1}.it:hover{border-color:var(--sea)}.it:active{transform:scale(.97)}
-.it.qk{background:var(--sea);border-color:var(--sea);color:#fff}:root[data-theme=dark] .it.qk{color:#06222a}#p0 .fold{display:none}#thub .ig{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}.ig.big .it{min-height:150px;justify-content:flex-start;padding:16px 8px 12px;gap:6px}.ig.big .it .ic{font-size:38px}.ig.big .it em{font-style:normal;font-size:12.5px;font-weight:600;color:var(--sub);line-height:1.4;text-align:left;margin-top:4px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;width:100%}#thub .it:last-child:nth-child(odd){grid-column:1/-1;min-height:110px}#thub .dt{background:var(--sun)}.it small{font-size:12.5px;font-weight:700;color:var(--sub)}.it.qk small{color:#fff}.it .dt{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--ok)}
+.it.qk{background:var(--sea);border-color:var(--sea);color:#fff}:root[data-theme=dark] .it.qk{color:#06222a}#p0 .fold{display:none}#thub .ig{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}.ig.big .it{min-height:150px;justify-content:flex-start;padding:16px 8px 12px;gap:6px}.ig.big .it .ic{font-size:38px}.ig.big .it em{font-style:normal;font-size:12.5px;font-weight:600;color:var(--sub);line-height:1.4;text-align:left;margin-top:4px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;width:100%}#thub .it:last-child:nth-child(odd){grid-column:1/-1;min-height:110px}#thub .dt{background:var(--sun)}.plr.done b{text-decoration:none;color:var(--tx)}.plr.done .box{background:var(--warn);border-color:var(--warn)}.it small{font-size:12.5px;font-weight:700;color:var(--sub)}.it.qk small{color:#fff}.it .dt{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--ok)}
 .qrw{display:flex;gap:12px;padding:12px 0;border-top:1px dashed var(--line)}.qrw:first-of-type{border-top:0}.qrw img{width:96px;height:96px;flex:none;object-fit:contain;background:#fff;border:2px solid var(--line);border-radius:10px;padding:4px}.qrw>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.qrw b{font-size:16px;overflow-wrap:anywhere}.qrw .btn{padding:9px 10px;min-height:44px;font-size:14.5px}.qrb{display:flex;gap:6px;flex-wrap:wrap}.qrb .btn{flex:1;padding:7px 8px;min-height:40px;font-size:13.5px}
 .krt{fill:#222;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.krt.kb{font-weight:900}.krw{font-size:13px;fill:#666;font-weight:700}.kvw svg{display:block;width:100%;height:auto}
 .mvw{overflow:auto;border-radius:12px;background:#fff;border:2px solid var(--line);height:62vh;-webkit-overflow-scrolling:touch}.mvw img{display:block;max-width:none}
@@ -1421,7 +1421,7 @@ const termHint=(k,v)=>k==='fOutTerm'?(v==='2'?'2터미널에는 기차역이 없
 /* ---------- 내 정보: 아이콘 허브 + 칸별 화면 ---------- */
 let infoSec=null;
 const ISEC=[['hotel','🏨','숙소'],['fout','✈️','가는 비행기'],['fback','🛫','오는 비행기'],['pass','🪪','여권'],['emerg','🆘','비상 연락'],['rate','💴','환율']];
-const IMORE=[['sync','👥','같이 쓰기'],['bak','💾','백업'],['imp','📥','지도 가져오기']];
+const IMORE=[['places','🧹','장소 정리'],['sync','👥','같이 쓰기'],['bak','💾','백업'],['imp','📥','지도 가져오기']];
 function igKeys(gi){let n=-1;const r=[];IF.forEach(f=>{if(f[0]==='sec')n++;else if(n===gi)r.push(f[0])});return r}
 function infoGo(s){infoSec=s||null;infoHTML();window.scrollTo(0,0)}
 /* ---------- QR 지갑 (이 폰에만 저장, 서버에 안 올라가요) ---------- */
@@ -1456,6 +1456,19 @@ function qrWallet(){const a=qrList(),kb=Math.round(a.reduce((n,q)=>n+q.img.lengt
  ${a.length?a.map((q,i)=>`<div class="qrw"><img src="${q.img}" alt="" onclick="qrShow('${q.id}')"><div><b>${q.i} ${esc(q.n)}</b><button class="btn" onclick="qrShow('${q.id}')">🔍 크게 보기</button><div class="qrb"><button class="btn ln" onclick="qrForm('${q.id}')">고치기</button>${i?`<button class="btn ln" onclick="qrFirst('${q.id}')">맨 앞으로</button>`:''}<button class="btn ln" onclick="qrDel('${q.id}')">지우기</button></div></div></div>`).join(''):'<p class="hint">아직 없어요. 아래 버튼으로 첫 QR을 넣어 보세요.</p>'}
  <div class="act" style="margin:12px 0"><button class="btn big" onclick="qrForm()">＋ QR 추가</button></div>
  <p class="hint">저장 공간 약 ${kb}KB 사용 · 백업 파일에는 들어가요. 백업 파일은 남에게 보내지 마세요.</p></div>`}
+/* ---------- 장소 정리: 여러 곳 골라서 한 번에 지우기 ---------- */
+const plSel=new Set();
+const plList=()=>PLACES.filter(p=>!p.home);
+function plTog(id){plSel.has(id)?plSel.delete(id):plSel.add(id);infoHTML()}
+function plAll(){const a=plList();if(plSel.size===a.length)plSel.clear();else a.forEach(p=>plSel.add(p.id));infoHTML()}
+function plDel(){const a=plList().filter(p=>plSel.has(p.id));if(!a.length)return;
+ ask(a.length+'곳을 지울까요? 되돌릴 수 없어요.',()=>{const ids=new Set(a.map(p=>p.id));
+  for(let i=PLACES.length-1;i>=0;i--)if(ids.has(PLACES[i].id)&&!PLACES[i].home)PLACES.splice(i,1);
+  plSel.clear();savePlaces();afterChange(null);infoHTML();gtoast(a.length+'곳을 지웠어요')},'지우기')}
+function placesCard(){const a=plList();[...plSel].forEach(id=>{if(!a.some(p=>p.id===id))plSel.delete(id)});
+ return `<div class="card"><h3>🧹 장소 정리</h3><p class="hint" style="margin:-4px 0 10px">지울 장소를 눌러 고른 뒤 아래 버튼을 눌러요. 숙소는 지워지지 않아요.</p>
+ ${a.length?`<div class="act" style="margin:0 0 6px"><button class="btn ln" onclick="plAll()">${plSel.size===a.length?'선택 모두 풀기':'전체 선택 ('+a.length+'곳)'}</button></div>`+a.map(p=>`<div class="mi plr ${plSel.has(p.id)?'done':''}" onclick="plTog('${p.id}')" style="cursor:pointer"><button class="box" aria-label="선택" aria-pressed="${plSel.has(p.id)}">✓</button><div style="flex:1;min-width:0"><b>${esc(p.i)} ${esc(p.n)}</b><span class="w">${p.day?'일정에 들어 있어요':'날짜 안 정함'}</span></div></div>`).join('')
+ +`<div class="act" style="margin-top:12px"><button class="btn big" style="${plSel.size?'':'opacity:.45'}" ${plSel.size?'':'disabled'} onclick="plDel()">🗑 선택한 ${plSel.size}곳 지우기</button></div>`:'<p class="hint">지울 장소가 없어요.</p>'}</div>`}
 function backupCard(){
  return `<div class="card"><h3>💾 백업</h3><p class="hint" style="margin:-4px 0 12px">폰을 바꾸거나 브라우저 데이터를 지우면 내용이 사라져요. 가끔 파일로 저장해 두세요.</p>
  <div class="act" style="margin-bottom:16px"><button class="btn ln big" onclick="exportAll()">백업 파일 저장</button><button class="btn ln big" onclick="$('#imp').click()">백업 파일 불러오기</button><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importAll(this.files[0])"></div></div>`;
@@ -1488,7 +1501,7 @@ function infoHTML(){
  if(hub)h=hubHTML();
  else{h=`<button class="btn ln" style="margin:0 0 14px" onclick="infoGo()">← 내 정보로</button>`;
   const gi=ISEC.findIndex(s=>s[0]===infoSec);
-  if(gi>=0)h+=igCard(gi);else if(infoSec==='qr')h+=qrWallet();else if(infoSec==='sync')h+=syncCard()+whoCard();else if(infoSec==='bak')h+=backupCard()}
+  if(gi>=0)h+=igCard(gi);else if(infoSec==='qr')h+=qrWallet();else if(infoSec==='sync')h+=syncCard()+whoCard();else if(infoSec==='bak')h+=backupCard();else if(infoSec==='places')h+=placesCard()}
  $('#info').innerHTML=h;
  [['infonote',hub],['offc',hub],['impc',infoSec==='imp']].forEach(q=>{const e=document.getElementById(q[0]);if(e)e.style.display=q[1]?'':'none'});
  syncStatus();
