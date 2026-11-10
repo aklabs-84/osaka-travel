@@ -94,6 +94,16 @@ h2.sec{font-family:var(--font-head);font-weight:400;font-size:22px;margin:22px 2
 .btn.ln{background:none;color:var(--sea2);border:2px solid var(--sea)}
 :root[data-theme=dark] .btn.ln{color:var(--sea)}
 .btn.big{width:100%;min-height:54px;font-size:18px}
+.btn.busy{pointer-events:none;opacity:1}
+.btn.ok{background:var(--ok);pointer-events:none}
+.btn.bad{background:var(--warn);pointer-events:none}
+.spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spn .8s linear infinite;flex:none}
+:root[data-theme=dark] .spin{border-color:rgba(6,34,42,.3);border-top-color:#06222a}
+@keyframes spn{to{transform:rotate(360deg)}}
+.sybar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;opacity:0;transition:opacity .2s;margin-top:-2px}
+.sybar.on{opacity:1}
+.sybar i{display:block;height:100%;width:0;background:var(--sea);border-radius:3px;transition:width .6s ease}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.sybar i{transition:none}}
 .eta{font-family:var(--font-body);font-weight:700;font-size:15.5px;color:var(--sea2)}
 :root[data-theme=dark] .eta{color:var(--sea)}
 .tb{font-weight:800;font-size:14px;border:2px solid var(--line);border-radius:8px;padding:2px 9px;color:var(--sub)}
@@ -1240,27 +1250,41 @@ function reportDoc(){
 async function syncNow(manual){
  const c=syncCfg();
  if(!c.on||!c.url||!c.code)return;
- if(syncing){syncAgain=true;return}
+ if(syncing){if(manual)gtoast('맞추는 중이에요');else syncAgain=true;return}
  syncing=true;syncAgain=false;syncMsg='';
- let changed=false;
+ let changed=false,okUi=false;
  const mark=()=>{changed=true};syncNow.mark=mark;
+ const ui=s=>{if(manual)syncUi(s)};
  try{
+  ui('up');
   if(!navigator.onLine)throw new Error('offline');
   const sent=JSON.stringify(syncLocalDoc());
   const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,doc:JSON.parse(sent),rep:reportDoc()}),redirect:'follow'});
   const j=await r.json();
   if(!j.ok)throw new Error(j.error||'fail');
+  ui('down');if(manual)await new Promise(r=>setTimeout(r,700));   /* 너무 빨리 사라지지 않게 */
   if(changed||JSON.stringify(syncLocalDoc())!==sent){syncAgain=true}   /* 보내는 동안 또 고쳤으면 덮지 않고 다시 */
   else syncApply(j.doc);
   const n=syncCfg();n.last=Date.now();store.set('sync',n);syncMsg='';
+  okUi=true;
   if(manual)gtoast('동기화했어요');
  }catch(e){
   syncMsg=e.message==='code'?'비밀 코드가 달라요':(e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':'연결이 안 돼요. 주소와 코드를 확인해 주세요');
   if(manual)gtoast(syncMsg);
  }
  syncing=false;syncNow.mark=null;
+ if(manual)syncUi(okUi?'ok':'err');
  syncStatus();
  if(syncAgain)setTimeout(()=>syncNow(),300);
+}
+function syncUi(s){
+ const b=$('#sy-btn'),bar=$('#sy-bar'),st=$('#sy-st');if(!b)return;
+ const T={up:['올리는 중…',35],down:['받아서 합치는 중…',80],ok:['✓ 맞췄어요',100],err:['✕ 맞추지 못했어요',100],idle:['지금 맞추기',0]},[t,w]=T[s],busy=s==='up'||s==='down';
+ b.className='btn big'+(busy?' busy':s==='ok'?' ok':s==='err'?' bad':'');
+ b.disabled=busy;b.innerHTML=(busy?'<i class="spin"></i>':'')+t;
+ if(bar){bar.className='sybar'+(s==='idle'?'':' on');bar.firstElementChild.style.width=w+'%'}
+ if(busy&&st){st.textContent=t;st.style.color=''}
+ clearTimeout(syncUi.t);if(s==='ok'||s==='err')syncUi.t=setTimeout(()=>syncUi('idle'),1600);
 }
 function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(),4000)}
 (function(){
@@ -1286,7 +1310,7 @@ function syncCard(){
  <p class="hint" style="margin:-4px 0 12px">두 폰이 같은 일정·가계부·체크 표시를 봐요. 여권·비상 연락·입국 QR은 올라가지 않아요. 처음 한 번만 설정하면 돼요.</p>
  <div class="fl"><span>구글 시트 주소</span><div class="fr"><input id="sy-url" type="url" value="${esc(c.url)}" oninput="syncSet('url',this.value)" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
  <div class="fl"><span>비밀 코드</span><div class="fr"><input id="sy-code" type="password" autocomplete="off" value="${esc(c.code)}" oninput="syncSet('code',this.value)" placeholder="시트에 적은 비밀 코드"></div></div>
- <div class="act" style="margin-bottom:8px">${c.on?`<button class="btn big" onclick="syncNow(true)">지금 맞추기</button><button class="btn ln big" onclick="syncToggle(false)">끄기</button>`:`<button class="btn big" onclick="syncToggle(true)">같이 쓰기 켜기</button>`}</div>
+ <div class="act" style="margin-bottom:8px">${c.on?`<button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="syncToggle(false)">끄기</button>`:`<button class="btn big" onclick="syncToggle(true)">같이 쓰기 켜기</button>`}</div>
  <p class="hint" id="sy-st" style="margin:0 0 12px"></p></div>`;
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();const n=new Date().toDateString();if(n!==lastDay){lastDay=n;dd();const t=todayIdx();if(t>=0)setDay(t);else days()}}});
