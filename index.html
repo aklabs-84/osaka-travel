@@ -287,6 +287,7 @@ textarea{resize:vertical;line-height:1.5}
 .pcard{cursor:pointer}
 .phr .rd{font-size:16px;color:var(--sea2);font-weight:700}.phr .ko{font-size:16px;color:var(--sub)}
 :root[data-theme=dark] .phr .rd{color:var(--sea)}
+.mapl{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}.mapl .btn{display:flex;align-items:center;gap:12px;text-align:left;min-height:64px;padding:10px 14px;justify-content:flex-start}.mapl .lmi{font-size:28px}.mapl .lmt{flex:1;min-width:0}.mapl .lmt b{display:block;font-size:19px;line-height:1.3}.mapl .lmt small{display:block;font-size:14.5px;color:var(--sub);font-weight:400;line-height:1.4}.mapl .lma{font-size:20px;color:var(--sub)}
 .lgtog{display:flex;gap:8px;margin-bottom:12px}.lgtog button{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);font:inherit;font-size:18px;font-weight:700}.lgtog button.on{background:var(--sea2);border-color:var(--sea2);color:#fff}:root[data-theme=dark] .lgtog button.on{color:#0A1D26}
 .bigaddr{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 4px 0 var(--line);margin-bottom:12px}
 .bigaddr .n{font-size:30px;font-weight:800;line-height:1.3}.bigaddr .a{font-size:24px;line-height:1.5;margin-top:10px;word-break:break-word}.bigaddr .p{font-family:var(--font-num);font-size:26px;margin-top:10px}
@@ -395,6 +396,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
   <div class="tools">
     <button id="bLoc" aria-label="내 위치">📍<small>내 위치</small></button>
     <button id="bAll" aria-label="전체 보기">⤢<small>전체</small></button>
+    <button id="bMetro" aria-label="지하철 노선도" onclick="metroOv()">🚇<small>노선도</small></button>
     <button id="bLab" aria-label="지도 이름 켜고 끄기" aria-pressed="false">🏷<small>이름</small></button>
     <button id="bIn" aria-label="확대">＋</button>
     <button id="bOut" aria-label="축소">－</button>
@@ -714,7 +716,7 @@ function unHTML(d){
  const u=PLACES.filter(p=>!p.home&&!p.day&&pShow(p));
  const pb=d.k==='pre'?`<button class="addslot" style="margin-top:12px" onclick="openSheet(null,{})">＋ 가고 싶은 곳 추가</button>`:'';
  if(!u.length)return pb;
- return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="mi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}${obadge(p)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`+pb;
+ return `<h2 class="sec">${d.k==='pre'?'가고 싶은 곳 (날짜 아직)':'날짜 안 정한 장소'}</h2><div class="must">`+u.map(p=>`<div class="lmi" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>${esc(p.i)} ${esc(p.n)}${obadge(p)}</b>${p.memo?`<span class="w">${esc(p.memo.slice(0,60))}</span>`:''}</div>${d.k!=='pre'?`<div class="as">${BASE.map(b=>`<button onclick="assign('${p.id}','${d.k}','${b[2]}')">${b[1]}에</button>`).join('')}<button onclick="openSheet('${p.id}')">고치기</button></div>`:`<div class="as"><button onclick="openSheet('${p.id}')">고치기</button></div>`}</div>`).join('')+`</div>`+pb;
 }
 function assign(id,dk,slot){const p=PLACES.find(x=>x.id===id);p.day=dk;p.slot=slot;savePlaces();render();gtoast('일정에 넣었어요')}
 /* 직접 만든 할 일: INFO.todos=[[아이디,글,날짜칸(pre/d0/d1/d2)],…] (정보와 함께 같이 쓰기로 동기화) */
@@ -1083,6 +1085,19 @@ function addrOv(l){
  <p class="hint">${ja?'택시 기사님이나 직원에게 이 화면을 보여 주세요. (일본어 표시)':'택시 기사님이나 직원에게 이 화면을 보여 주세요. (영어 표시)'}</p>`);
 }
 
+/* ---------- 노선도 (공식 사이트로 연결) ---------- */
+const MAPS=[
+ ['🚇','오사카 메트로','숙소 근처 · 시내 이동 (미도스지선 등)','https://subway.osakametro.co.jp/ko/guide/routemap.php'],
+ ['🚆','JR 서일본 · 오사카 지역','JR 오사카 환상선 · 우메다·텐노지 (PDF)','https://www.westjr.co.jp/global/kr/timetable/pdf/map_osaka.pdf'],
+ ['🚆','JR 서일본 · 간사이 전체','공항 · 교토 · 고베 · 나라까지 (PDF)','https://www.westjr.co.jp/global/kr/timetable/pdf/map_kansai.pdf'],
+ ['🚃','한큐 전철','우메다 ↔ 고베·교토·다카라즈카','https://www.hankyu.co.jp/kr/station/rosen/index.html'],
+ ['✈️','난카이 전철','난바 ↔ 간사이공항 · 고야산','https://www.nankai.co.jp/traffic/railmap.html']];
+function metroOv(){
+ openOv(`<div class="ph2"><b>지하철·전철 노선도</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="mapl">${MAPS.map(m=>`<a class="btn ln" target="_blank" rel="noopener" href="${esc(m[3])}"><span class="lmi">${m[0]}</span><span class="lmt"><b>${esc(m[1])}</b><small>${esc(m[2])}</small></span><span class="lma">↗</span></a>`).join('')}</div>
+ <p class="hint">각 회사의 공식 노선도가 새 창으로 열려요. 인터넷이 필요해요. 손가락 두 개로 벌리면 크게 볼 수 있어요.</p>`);
+}
+
 /* ---------- 가계부 ---------- */
 function money(){
  const t=spent.reduce((a,b)=>a+b.y,0);
@@ -1195,7 +1210,7 @@ function infoHTML(){
   else if(ty==='area')inp=`<textarea id="i-${k}" rows="3" oninput="setInfo('${k}',this.value)" placeholder="${esc(ph||'')}">${esc(v)}</textarea>`;
   else inp=`<input id="i-${k}" type="${ty}" ${ty==='number'?'inputmode="numeric"':''} value="${esc(v)}" oninput="setInfo('${k}',this.value)" placeholder="${esc(ph||'')}">`;
   h+=`<div class="fl"><span>${lb}</span><div class="fr">${inp}${cp?`<button class="btn ln" onclick="copyInfo('${k}')">복사</button>`:''}</div>${ty==='sel'?`<p class="hint" id="h-${k}">${termHint(k,v)}</p>`:''}${hn?`<p class="hint">${hn}</p>`:''}</div>`;
-  if(k==='outDate')h+=`<button class="btn big" style="margin-bottom:16px" onclick="addrOv()">🚕 택시·직원에게 주소 크게 보여주기</button>`;
+  if(k==='outDate')h+=`<button class="btn big" style="margin-bottom:12px" onclick="addrOv()">🚕 택시·직원에게 주소 크게 보여주기</button><button class="btn big ln" style="margin-bottom:16px" onclick="metroOv()">🚇 지하철·전철 노선도 보기</button>`;
  });
  if(open)h+='</div>';
  h+=`<div class="card"><h3>💾 백업</h3><p class="hint" style="margin:-4px 0 12px">폰을 바꾸거나 브라우저 데이터를 지우면 내용이 사라져요. 가끔 파일로 저장해 두세요.</p>
