@@ -322,11 +322,22 @@ nav.tabs button:after{content:"";position:absolute;left:30%;right:30%;top:0;heig
 nav.tabs button.on:after{transform:scaleX(1)}
 .rv{opacity:0;transform:translateY(14px);transition:opacity .45s,transform .45s}.rv.in{opacity:1;transform:none}
 #askbg{display:none;position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px}#askbg.on{display:flex}.askbox{background:var(--bg);color:var(--tx);border-radius:16px;padding:22px 18px 16px;width:100%;max-width:340px;box-shadow:0 10px 40px rgba(0,0,0,.35)}.askbox p{font-size:18px;font-weight:800;line-height:1.5;text-align:center;margin:4px 0 18px;word-break:keep-all}.askbt{display:flex;gap:10px}.askbt .btn{flex:1;padding:10px 6px;white-space:nowrap}.askok{background:#C0392B;color:#fff}:root[data-theme=dark] .askok{color:#fff}
+#gate{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;display:none;align-items:flex-start;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 16px 40px}
+#gate.on{display:flex}
+#gate .gbox{width:100%;max-width:420px}
+#gate h1{font-family:var(--font-head);font-weight:400;font-size:30px;margin-bottom:6px}
+#gate .gtab{display:flex;gap:8px;margin:16px 0 18px}
+#gate .gtab button,#gate .grole button{flex:1;font:inherit;font-weight:800;font-size:16px;min-height:48px;padding:6px 10px;border-radius:12px;background:var(--card);color:var(--tx);border:2px solid var(--line);cursor:pointer}
+#gate .gtab button.on,#gate .grole button.on{background:var(--sea);border-color:var(--sea);color:#fff}
+:root[data-theme=dark] #gate .gtab button.on,:root[data-theme=dark] #gate .grole button.on{color:#06222a}
+#gate .grole{display:flex;gap:8px}
+#gate .gerr{color:var(--warn);font-weight:800;font-size:15px;min-height:24px;margin:0 0 10px}
 #gt{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;background:var(--tx);color:var(--bg);border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #gt.on{opacity:1}
 </style>
 </head>
 <body>
+<div id="gate" role="dialog" aria-label="로그인"></div>
 <div class="wrap" id="main">
 <div class="hero"><button class="mode" id="mode">어둡게</button><h1>오사카 2박 3일</h1><p>11월 30일 – 12월 2일 · 둘이 가는 여행</p><span class="dd" id="dd"></span></div>
 <div class="days" id="days"></div>
@@ -1471,7 +1482,7 @@ function placesCard(){const a=plList();[...plSel].forEach(id=>{if(!a.some(p=>p.i
  +`<div class="act" style="margin-top:12px"><button class="btn big" style="${plSel.size?'':'opacity:.45'}" ${plSel.size?'':'disabled'} onclick="plDel()">🗑 선택한 ${plSel.size}곳 지우기</button></div>`:'<p class="hint">지울 장소가 없어요.</p>'}</div>`}
 function backupCard(){
  return `<div class="card"><h3>💾 백업</h3><p class="hint" style="margin:-4px 0 12px">폰을 바꾸거나 브라우저 데이터를 지우면 내용이 사라져요. 가끔 파일로 저장해 두세요.</p>
- <div class="act" style="margin-bottom:16px"><button class="btn ln big" onclick="exportAll()">백업 파일 저장</button><button class="btn ln big" onclick="$('#imp').click()">백업 파일 불러오기</button><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importAll(this.files[0])"></div></div>`;
+ <div class="act" style="margin-bottom:16px"><button class="btn ln big" onclick="exportAll()">백업 파일 저장</button><button class="btn ln big" onclick="xlsxSave()">📊 엑셀로 저장</button><button class="btn ln big" onclick="$('#imp').click()">백업 파일 불러오기</button><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importAll(this.files[0])"></div></div>`;
 }
 function igCard(gi){
  let h='',n=-1;
@@ -1602,6 +1613,59 @@ async function sbRpc(fn,args){
  }catch(e){throw new Error(ac.signal.aborted?'timeout':(/^http/.test(e.message)?e.message:'net'))}
  finally{clearTimeout(to)}
 }
+/* ---------- 여행 보고서를 엑셀(.xlsx) 파일로 저장: 외부 도구 없이 앱 안에서 만들어서 인터넷이 없어도 돼요 ---------- */
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+ const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+ const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+ files.forEach(([nm,txt])=>{
+  const nb=enc.encode(nm),d=enc.encode(txt),crc=crc32(d),L=d.length;
+  parts.push(new Uint8Array([0x50,0x4b,3,4,20,0,0,8,0,0,0,0,0x21,0,...u32(crc),...u32(L),...u32(L),...u16(nb.length),0,0]),nb,d);
+  cen.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,8,0,0,0,0,0x21,0,...u32(crc),...u32(L),...u32(L),...u16(nb.length),0,0,0,0,0,0,0,0,0,0,0,0,...u32(off)]),nb);
+  off+=30+nb.length+L;
+ });
+ const cs=cen.reduce((a,b)=>a+b.length,0);
+ return new Blob([...parts,...cen,new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cs),...u32(off),0,0])],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsxSheet(sh){
+ const X=t=>String(t==null?'':t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const L=i=>String.fromCharCode(65+i);
+ const cs=(r,i,v,st)=>typeof v==='number'?`<c r="${L(i)}${r}" s="${st}"><v>${v}</v></c>`:(v&&v.f?`<c r="${L(i)}${r}" s="4"><f>${X(v.f)}</f></c>`:`<c r="${L(i)}${r}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${X(v)}</t></is></c>`);
+ let x=`<row r="1" ht="32" customHeight="1">${cs(1,0,sh.title,1)}</row><row r="2" ht="24" customHeight="1">${sh.head.map((h,i)=>cs(2,i,h,2)).join('')}</row>`;
+ sh.rows.forEach((row,ri)=>{const r=ri+3;x+=`<row r="${r}">${row.map((v,i)=>cs(r,i,v,typeof v==='number'?4:3)).join('')}</row>`});
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${sh.w.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${x}</sheetData></worksheet>`;
+}
+function xlsxBuild(rep){
+ const num=(a,i)=>a.map(r=>r.map((v,j)=>j===i&&v!==''&&!isNaN(+v)?+v:v));
+ const n=rep.ex.length,end=n+2;
+ const shs=[
+  {name:'일정',title:'📅 '+rep.title+' — 일정',head:['날짜','시간','장소','종류','메모','링크','누가'],rows:rep.plan,w:[12,10,30,10,36,30,8]},
+  {name:'장소',title:'📍 가고 싶은 곳 · 장소 목록',head:['장소','종류','날짜','시간','메모','링크','누가'],rows:rep.places,w:[30,10,12,10,36,30,8]},
+  {name:'경비',title:'💴 여행 경비',head:['날짜','분류','내용','금액(¥)'],rows:rep.ex.concat([['','','합계(¥)',n?{f:'SUM(D3:D'+end+')'}:0],['','','환율 (¥100 = ?원)',rep.rate],['','','합계(원 환산)',{f:'D'+(end+1)+'*D'+(end+2)+'/100'}]]),w:[12,14,36,16]},
+  {name:'할 일',title:'✅ 해야 할 일 체크리스트',head:['구분','할 일','상태'],rows:rep.todo.map(r=>[r[0],r[1],r[2]?'✓ 완료':'']),w:[16,52,12]},
+  {name:'숙소·항공',title:'🏨 숙소 · ✈️ 항공 정보',head:['항목','내용'],rows:rep.info.map(r=>[r[0],r[1]||'(아직 안 적었어요)']),w:[24,56]}
+ ];
+ const NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+ const bd='<border><left style="thin"><color rgb="FFD5DDE0"/></left><right style="thin"><color rgb="FFD5DDE0"/></right><top style="thin"><color rgb="FFD5DDE0"/></top><bottom style="thin"><color rgb="FFD5DDE0"/></bottom></border>';
+ const files=[
+  ['[Content_Types].xml',H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+shs.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')+'</Types>'],
+  ['_rels/.rels',H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+  ['xl/workbook.xml',H+`<workbook ${NS} xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${shs.map((s,i)=>`<sheet name="${s.name}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`],
+  ['xl/_rels/workbook.xml.rels',H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+shs.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')+`<Relationship Id="rId${shs.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+  ['xl/styles.xml',H+`<styleSheet ${NS}><fonts count="2"><font><sz val="11"/><name val="Malgun Gothic"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Malgun Gothic"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2F6F7E"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF4697A6"/></patternFill></fill></fills><borders count="2"><border/>${bd}</borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="5"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf fontId="1" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="3" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="top"/></xf></cellXfs></styleSheet>`]
+ ];
+ shs.forEach((s,i)=>files.push([`xl/worksheets/sheet${i+1}.xml`,xlsxSheet(s)]));
+ return zipStore(files);
+}
+function xlsxSave(){
+ try{
+  const b=xlsxBuild(reportDoc()),d=new Date(),ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='오사카여행_보고서_'+ymd+'.xlsx';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+  gtoast('엑셀 파일을 저장했어요');
+ }catch(e){gtoast('파일을 만들지 못했어요')}
+}
 async function syncNow(manual){
  const c=syncCfg();
  if(!c.on||!c.trip)return;
@@ -1680,7 +1744,8 @@ function syncStatus(){
 }
 function syncSet(k,v){const c=syncCfg();c[k]=v;if(k==='url'&&v.trim()!==(c.sheetFor||''))c.sheet='';store.set('sync',c);if(k==='url')sheetBtn()}
 const SHEET_RE=/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/;
-function sheetBtn(){const e=$('#sy-sheet');if(!e)return;const c=syncCfg();e.innerHTML=c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}
+const SHEET_FIXED='https://docs.google.com/spreadsheets/d/1z09zUKMJUOKELnFhoz8wHOrt7t4JBAk5w3gk9O6mSm8/edit?gid=675407514#gid=675407514';   /* 우리 여행 시트: 열기 버튼은 항상 이 주소 */
+function sheetBtn(){const e=$('#sy-sheet');if(!e)return;const c=syncCfg();e.innerHTML=`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(SHEET_FIXED)}">📊 구글 스프레드시트 열기</a>`}
 function tripGen(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(20);crypto.getRandomValues(b);let t='';b.forEach((x,i)=>{if(i&&i%5===0)t+='-';t+=A[x%A.length]});return t}
 function tripStart(code){
  const c=syncCfg();c.trip=code;c.on=true;c.since=null;c.last=0;store.set('sync',c);store.set('syncbase',null);
@@ -1696,25 +1761,95 @@ function syncOff(){const c=syncCfg();c.on=false;store.set('sync',c);infoHTML()}
 function tripCopy(){const c=syncCfg();try{navigator.clipboard.writeText(c.trip).then(()=>gtoast('코드를 복사했어요'),()=>gtoast('복사하지 못했어요. 직접 적어 주세요'))}catch(e){gtoast('복사하지 못했어요. 직접 적어 주세요')}}
 function syncCard(){
  const c=syncCfg(),on=c.on&&c.trip;
- return `<div class="card"><h3>👫 동행자와 같이 쓰기</h3>
- <p class="hint" style="margin:-4px 0 12px">두 폰이 같은 일정·가계부·체크 표시를 바로바로 봐요. 여권·비상 연락·입국 QR은 올라가지 않아요.</p>
+ return acctCard()+`<div class="card"><h3>👫 동행자와 같이 쓰기</h3>
+ <p class="hint" style="margin:-4px 0 12px">같은 여행 코드를 쓰는 폰끼리 일정·가계부·체크 표시를 바로바로 봐요. 여권·비상 연락·입국 QR은 올라가지 않아요.</p>
  ${on?`<div class="fl"><span>우리 여행 코드</span><div class="fr"><input id="sy-trip" readonly value="${esc(c.trip)}" style="font-family:ui-monospace,monospace;letter-spacing:.5px" onclick="this.select()"></div></div>
- <p class="hint" style="margin:0 0 10px">동행자 폰에서 “이미 코드가 있어요”에 이 코드를 넣으면 연결돼요. 코드를 아는 사람은 누구나 볼 수 있으니 단체방 같은 곳엔 올리지 마세요.</p>
- <div class="act" style="margin-bottom:8px"><button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="tripCopy()">코드 복사</button><button class="btn ln big" onclick="syncOff()">끄기</button></div>`
- :`<div class="act" style="margin-bottom:10px"><button class="btn big" onclick="syncMake()">새 여행 코드 만들기</button></div>
- <div class="fl"><span>이미 코드가 있어요</span><div class="fr"><input id="sy-join" value="${esc(c.trip||'')}" autocomplete="off" autocapitalize="characters" placeholder="동행자에게 받은 코드"><button class="btn ln" onclick="syncJoin()">연결</button></div></div>`}
+ <p class="hint" style="margin:0 0 10px">동행자가 앱을 열어 “처음이에요”에서 이 코드를 넣고 계정을 만들면 연결돼요. 코드를 아는 사람은 누구나 볼 수 있으니 단체방 같은 곳엔 올리지 마세요.</p>
+ <div class="act" style="margin-bottom:8px"><button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="tripCopy()">코드 복사</button></div>`
+ :`<div class="act" style="margin-bottom:10px"><button class="btn big" onclick="tripStart((acct()||{}).trip||tripGen())">같이 쓰기 다시 켜기</button></div>`}
  <p class="hint" id="sy-st" style="margin:0 0 4px"></p></div>
- <div class="card"><h3>📊 구글 시트로 보고서 보기 <small style="font-weight:400;color:var(--mut)">(선택)</small></h3>
- <p class="hint" style="margin:-4px 0 12px">일정·장소·가계부를 보기 좋은 표로 시트에 그려 줘요. 시트에서 고쳐도 앱엔 반영되지 않아요. 영수증 읽기·구글 지도 링크 풀기·지하철 노선도도 이 연결을 써요.</p>
+ <div class="card"><h3>📊 여행 보고서 엑셀로 받기</h3>
+ <p class="hint" style="margin:-4px 0 12px">일정·장소·경비·할 일·숙소 정보를 표로 만든 엑셀 파일(.xlsx)을 폰이나 컴퓨터에 저장해요. 인터넷이 없어도 돼요. 구글 시트에 올려서 볼 수도 있어요.</p>
+ <div class="act" style="margin-bottom:0"><button class="btn big" onclick="xlsxSave()">엑셀 파일로 저장</button></div></div>
+ <details class="card"><summary style="font-weight:700;cursor:pointer;padding:4px 0">🔧 구글 시트 연결 <small style="font-weight:400;color:var(--mut)">(고급·선택)</small></summary>
+ <p class="hint" style="margin:8px 0 12px">보고서를 구글 시트에 자동으로 그려 줘요. 시트에서 고쳐도 앱엔 반영되지 않아요. 영수증 읽기·구글 지도 링크 풀기·지하철 노선도도 이 연결을 써요.</p>
  <div class="fl"><span>구글 시트 주소</span><div class="fr"><input id="sy-url" type="url" value="${esc(c.url||'')}" oninput="syncSet('url',this.value)" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
  <div class="fl"><span>비밀 코드</span><div class="fr"><input id="sy-code" type="password" autocomplete="off" value="${esc(c.code||'')}" oninput="syncSet('code',this.value)" placeholder="시트에 적은 비밀 코드"></div></div>
  <div class="act" style="margin-bottom:8px"><button class="btn big" id="sh-btn" onclick="sheetSend(true)">시트로 보내기</button></div>
- <div class="act" id="sy-sheet" style="margin-bottom:0">${c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}</div></div>`;
+ <div class="act" id="sy-sheet" style="margin-bottom:0"><a class="btn ln big" target="_blank" rel="noopener" href="${esc(SHEET_FIXED)}">📊 구글 스프레드시트 열기</a></div></details>`;
+}
+/* ---------- 로그인: ID·비밀번호가 '내 여행 방(여행 코드)'과 내 역할(남편/아내)을 기억해 줘요 ---------- */
+const ACCT_MSG={E_ID:'ID는 영어 소문자·숫자·밑줄(_)로 3~20자 만들어 주세요',E_PW:'비밀번호는 6자 이상이어야 해요',E_TRIP:'여행 코드를 다시 확인해 주세요',E_NOTRIP:'그 여행 코드를 찾지 못했어요. 코드를 다시 확인해 주세요',E_FULL:'지금은 새 계정을 만들 수 없어요',E_DUP:'이미 있는 ID예요. 다른 ID를 써 주세요',E_BAD:'ID나 비밀번호가 맞지 않아요',E_LOCK:'여러 번 틀려서 5분 동안 잠겼어요. 잠시 뒤에 다시 해 주세요'};
+const acct=()=>store.get('acct',null);
+const G={m:'in',role:'',id:'',pw:'',trip:'',busy:false};
+function gateRender(){
+ const up=G.m==='up',n=pNames();
+ $('#gate').innerHTML=`<form class="gbox" onsubmit="gateGo();return false" autocomplete="on">
+ <h1>오사카 2박 3일</h1>
+ <p class="hint" style="margin:0">ID와 비밀번호로 들어오면 어느 폰에서든 내가 넣은 장소가 똑같이 보여요.</p>
+ <div class="gtab"><button type="button" class="${up?'':'on'}" onclick="gateMode('in')">로그인</button><button type="button" class="${up?'on':''}" onclick="gateMode('up')">처음이에요</button></div>
+ <label class="fl"><span>ID</span><input id="g-id" value="${esc(G.id)}" oninput="G.id=this.value" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20" placeholder="영어 소문자·숫자 3~20자"></label>
+ <label class="fl"><span>비밀번호</span><input id="g-pw" type="password" value="${esc(G.pw)}" oninput="G.pw=this.value" autocomplete="${up?'new-password':'current-password'}" maxlength="72" placeholder="6자 이상"></label>
+ ${up?`<div class="fl"><span>나는 누구예요?</span><div class="grole"><button type="button" class="${G.role==='a'?'on':''}" onclick="G.role='a';gateRender()">${esc(n[0])}</button><button type="button" class="${G.role==='b'?'on':''}" onclick="G.role='b';gateRender()">${esc(n[1])}</button></div></div>
+ <label class="fl"><span>동행자가 먼저 만들었다면 여행 코드</span><input id="g-trip" value="${esc(G.trip)}" oninput="G.trip=this.value" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="없으면 비워 두세요"></label>`:''}
+ <p class="gerr" id="g-err" role="alert"></p>
+ <button class="btn big" id="g-go" type="submit">${up?'계정 만들고 시작':'로그인'}</button>
+ <p class="hint" style="margin-top:14px">다른 곳에서 쓰는 비밀번호는 쓰지 마세요. 비밀번호를 잊으면 찾을 수 없어요. 그때는 새 ID를 만들고 여행 코드를 넣으면 장소가 그대로 돌아와요.</p>
+ </form>`;
+}
+function gateShow(){gateRender();$('#gate').classList.add('on')}
+function gateMode(m){G.m=m;gateRender()}
+function gateErr(t){const e=$('#g-err');if(e)e.textContent=t||''}
+async function gateGo(){
+ if(G.busy)return;
+ const id=G.id.trim().toLowerCase(),up=G.m==='up';
+ if(!id||!G.pw){gateErr('ID와 비밀번호를 넣어 주세요');return}
+ if(up&&!G.role){gateErr('나는 누구인지 골라 주세요');return}
+ G.busy=true;gateErr('');const b=$('#g-go');b.disabled=true;b.textContent='잠깐만요…';
+ try{
+  let r;
+  if(!up)r=await sbRpc('acct_login',{p_id:id,p_pw:G.pw});
+  else{
+   const jc=G.trip.trim().toUpperCase().replace(/\s+/g,''),c=syncCfg();
+   r=await sbRpc('acct_signup',{p_id:id,p_pw:G.pw,p_trip:jc||(c.on&&c.trip)||tripGen(),p_role:G.role,p_join:!!jc});
+  }
+  if(!r||!r.ok){gateErr(ACCT_MSG[r&&r.e]||'다시 해 주세요')}
+  else{G.pw='';gateDone(r);return}
+ }catch(e){gateErr('인터넷이 연결돼 있는지 확인해 주세요')}
+ G.busy=false;const b2=$('#g-go');if(b2){b2.disabled=false;b2.textContent=up?'계정 만들고 시작':'로그인'}
+}
+function acctWipe(){['places','info','done','spent','sync','syncbase','who','view','acct','qr','qrs','qrmemo'].forEach(k=>{try{localStorage.removeItem('osk_'+k)}catch(e){}})}
+function gateDone(r){
+ const prev=acct(),other=prev&&prev.id!==r.id;
+ if(other)acctWipe();
+ store.set('acct',{id:r.id,trip:r.trip});
+ if(r.role)store.set('who',r.role);
+ if(other){const c={url:'',code:'',on:true,trip:r.trip,since:null,last:0};store.set('sync',c);store.set('syncbase',null);location.reload();return}
+ if(r.role){WHO.me=r.role;WHO.view='all';store.set('view','all')}
+ $('#gate').classList.remove('on');
+ tripStart(r.trip);vwHTML();afterChange(null);
+ gtoast(r.id+' 님, 어서 오세요');
+}
+function acctOut(){
+ ask('로그아웃할까요? 이 폰에 저장된 여행 정보는 지워져요. 계정에는 그대로 남아 있어서 다시 로그인하면 돌아와요. (인터넷이 켜진 곳에서 하세요)',async()=>{
+  if(!navigator.onLine){gtoast('인터넷이 연결된 곳에서 해 주세요');return}
+  try{await syncNow(true)}catch(e){}
+  if(syncMsg){gtoast('아직 올리지 못했어요. 인터넷을 확인하고 다시 해 주세요');return}
+  acctWipe();location.reload();
+ },'로그아웃');
+}
+function acctCard(){
+ const a=acct();if(!a)return'';
+ return `<div class="card"><h3>🔑 내 계정</h3>
+ <p class="hint" style="margin:-4px 0 12px">ID <b>${esc(a.id)}</b> · ${twoOn()?esc(pNames()[WHO.me==='a'?0:1]):'역할 없음'}. 다른 폰에서 이 ID로 로그인하면 같은 장소가 보여요.</p>
+ <div class="act" style="margin-bottom:12px"><button class="btn ln big" onclick="acctOut()">로그아웃</button></div></div>
+ `;
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();const n=new Date().toDateString();if(n!==lastDay){lastDay=n;dd();const t=todayIdx();if(t>=0)setDay(t);else days()}}});
 window.addEventListener('online',()=>syncNow());
 setInterval(()=>{if(!document.hidden)syncNow()},15000);   /* 화면이 보일 때만 15초마다 '새 거 있나?' 가볍게 확인 */
 setTimeout(()=>syncNow(),1500);
+if(!acct())gateShow();
 
 
 /* ---------- 오프라인 준비 ---------- */
