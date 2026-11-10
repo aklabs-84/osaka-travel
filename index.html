@@ -1379,15 +1379,17 @@ const exName=c=>{const k=EXK.find(x=>x[0]===c)||EXK[4];return k[1]+' '+k[2]};
 let exc='food';
 function exkHTML(){$('#exk').innerHTML=EXK.map(k=>`<button class="${exc===k[0]?'on':''}" aria-pressed="${exc===k[0]}" onclick="exc='${k[0]}';exkHTML()">${k[1]} ${k[2]}</button>`).join('')}
 /* 영수증 찍기: 사진을 작게 줄여 중계소(Apps Script)에 보내고, 받은 값을 칸에 채운다(저장은 사용자가 '기록'을 눌러서) */
-function scanPick(){const c=syncCfg();if(!c.url||!c.code){gtoast('먼저 내 정보 → 같이 쓰기 → 구글 시트를 연결해 주세요');return}if(!navigator.onLine){gtoast('인터넷이 있어야 읽을 수 있어요. 직접 입력해 주세요');return}$('#scani').click()}
-function shrinkImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=1400,k=Math.min(1,m/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);ok(cv.toDataURL('image/jpeg',0.72).split(',')[1])};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('img'))};im.src=u})}
+function scanPick(){const c=syncCfg();if(!c.trip&&(!c.url||!c.code)){gtoast('먼저 로그인(같이 쓰기)을 켜 주세요');return}if(!navigator.onLine){gtoast('인터넷이 있어야 읽을 수 있어요. 직접 입력해 주세요');return}$('#scani').click()}
+function shrinkImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=2000,k=Math.min(1,m/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);ok(cv.toDataURL('image/jpeg',0.8).split(',')[1])};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('img'))};im.src=u})}
 async function scanGo(inp){
  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
  const b=$('#scanb'),t0=b.textContent;b.disabled=true;b.textContent='⏳ 영수증을 읽는 중… (몇 초)';
  try{
   const img=await shrinkImg(f),c=syncCfg();
-  const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'receipt',img}),redirect:'follow'});
-  const j=await r.json();
+  let j=null;
+  if(c.trip){try{const r=await fetch('/api/receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trip:c.trip,img})});if(r.ok||r.status===400)j=await r.json()}catch(e){}}   /* 새 주소(Vercel)에서만 있음 → 없으면 아래 예비 길로 */
+  if(!j&&c.url&&c.code){const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'receipt',img}),redirect:'follow'});j=await r.json()}
+  if(!j)throw new Error('fail');
   if(!j.ok)throw new Error(j.error||'fail');
   if(!j.total){gtoast('금액을 못 읽었어요. 다시 찍거나 직접 입력해 주세요');return}
   $('#exy').value=j.total;
@@ -1396,7 +1398,7 @@ async function scanGo(inp){
   gtoast('읽었어요! 맞는지 보고 "기록"을 눌러 주세요');
  }catch(e){
   const m=e.message;
-  gtoast(m==='nokey'?'시트 설정에 AI 열쇠(GEMINI_KEY)가 아직 없어요':m==='limit'?'오늘 읽기 한도를 다 썼어요. 직접 입력해 주세요':m==='code'?'비밀 코드가 달라요':m==='img'?'사진을 읽을 수 없어요':'읽기에 실패했어요. 직접 입력해 주세요');
+  gtoast(m==='nokey'?'AI 열쇠가 아직 없어요. 직접 입력해 주세요':m==='trip'?'같이 쓰기 코드를 확인해 주세요':m==='limit'?'오늘 읽기 한도를 다 썼어요. 직접 입력해 주세요':m==='code'?'비밀 코드가 달라요':m==='img'?'사진을 읽을 수 없어요':'읽기에 실패했어요. 직접 입력해 주세요');
  }finally{b.disabled=false;b.textContent=t0}
 }
 function addEx(){const n=$('#exn').value.trim()||'기타',y=Math.round(+$('#exy').value);if(!y||y<=0){gtoast('금액(엔)을 넣어 주세요');return}spent.unshift({n,y,c:exc,t:Date.now()});$('#exn').value='';$('#exy').value='';saveEx()}
