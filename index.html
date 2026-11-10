@@ -291,6 +291,10 @@ textarea{resize:vertical;line-height:1.5}
 .rtp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.rtp label{display:block;font-size:12.5px;font-weight:800;color:var(--sub);margin-bottom:3px}.rtp select{width:100%;min-width:0;padding:10px 8px;font:inherit;font-size:14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:#222}
 .rtb{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.rtb .btn{padding:8px 12px;min-height:40px;font-size:14px}
 .rtr{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;color:#222;font-size:15px}.rtr ol{margin:8px 0 0;padding:0;list-style:none}.rtr li{padding:8px 0;border-top:1px dashed #ddd;line-height:1.6}.rtr li:first-child{border-top:0}.rtr small{color:#666;font-size:13px}
+.ig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}.ig.q4{grid-template-columns:repeat(4,minmax(0,1fr))}.ihd{font-size:13.5px;font-weight:800;color:var(--sub);margin:0 2px 8px}
+.it{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:92px;padding:10px 4px;background:var(--card);border:2px solid var(--line);border-radius:14px;font:inherit;font-size:14.5px;font-weight:800;color:var(--tx);text-align:center;line-height:1.3;overflow-wrap:anywhere;cursor:pointer;transition:border-color .15s,transform .1s}.ig.q4 .it{font-size:13px}.it .ic{font-size:28px;line-height:1}.it:hover{border-color:var(--sea)}.it:active{transform:scale(.97)}
+.it.qk{background:var(--sea);border-color:var(--sea);color:#fff}:root[data-theme=dark] .it.qk{color:#06222a}.it .dt{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--ok)}
+.qrw{display:flex;gap:12px;padding:12px 0;border-top:1px dashed var(--line)}.qrw:first-of-type{border-top:0}.qrw img{width:96px;height:96px;flex:none;object-fit:contain;background:#fff;border:2px solid var(--line);border-radius:10px;padding:4px}.qrw>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.qrw b{font-size:16px;overflow-wrap:anywhere}.qrw .btn{padding:9px 10px;min-height:44px;font-size:14.5px}.qrb{display:flex;gap:6px;flex-wrap:wrap}.qrb .btn{flex:1;padding:7px 8px;min-height:40px;font-size:13.5px}
 .krt{fill:#222;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.krt.kb{font-weight:900}.krw{font-size:13px;fill:#666;font-weight:700}.kvw svg{display:block;width:100%;height:auto}
 .mvw{overflow:auto;border-radius:12px;background:#fff;border:2px solid var(--line);height:62vh;-webkit-overflow-scrolling:touch}.mvw img{display:block;max-width:none}
 .stq{width:100%;min-height:50px;font:inherit;font-size:17px;padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);margin-bottom:10px}
@@ -379,9 +383,9 @@ nav.tabs button.on:after{transform:scaleX(1)}
 
 <section class="pane" id="p4">
   <h2 class="sec" style="margin-top:4px">내 정보</h2>
-  <p style="font-size:15px;color:var(--sub);margin:-4px 2px 14px">여기에 적은 내용은 <b>이 폰 안에만</b> 저장돼요. 서버에 올라가지 않아요.</p>
-  <div id="offc"></div>
-  <div style="background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📥 구글 지도에서 장소 한꺼번에 가져오기</b>
+  <p id="infonote" style="font-size:15px;color:var(--sub);margin:-4px 2px 14px">여기에 적은 내용은 <b>이 폰 안에만</b> 저장돼요. 서버에 올라가지 않아요.</p>
+  <div id="info"></div>
+  <div id="impc" style="display:none;background:var(--card);border-radius:14px;padding:14px;margin:0 0 14px;border:1px solid var(--line)"><b style="font-size:17px">📥 구글 지도에서 장소 한꺼번에 가져오기</b>
    <p class="hint" style="margin:6px 0 10px">구글 지도에 모아 둔 장소를 파일로 받아 여기서 열면, 한 번에 목록에 넣을 수 있어요. 넣기 전에 골라 볼 수 있어요.</p>
    <b style="font-size:15.5px">🔗 목록 링크로 가져오기</b>
    <p class="hint" style="margin:4px 0 8px">구글 지도 ▸ 저장됨 ▸ 목록 ▸ ⋮ ▸ <b>목록 공유</b>(링크가 있는 사람은 볼 수 있음)로 복사한 링크를 붙여 넣어요. “같이 쓰기”가 연결돼 있어야 해요.</p>
@@ -392,7 +396,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
    <details style="margin-top:10px"><summary style="font-weight:800;font-size:15.5px;cursor:pointer">파일은 어떻게 받아요?</summary>
     <div class="hint" style="line-height:1.7"><b>① 내 지도(My Maps)</b> — 구글 지도 ▸ 저장됨 ▸ 지도 탭에서 만든 지도를 열고, ⋮ ▸ <b>KML/KMZ로 내보내기</b> ▸ “전체 지도” ▸ <b>KMZ 대신 .KML 파일로 내보내기</b>를 체크해 받아요. 위치가 정확해서 가장 좋아요.<br><b>② 저장한 장소 목록</b> — 구글 테이크아웃(takeout.google.com)에서 “저장됨(Saved)”만 골라 내려받아, 안의 <b>.csv 또는 .json</b> 파일을 열어요. csv는 이름으로 위치를 찾느라 조금 느려요.<br>아내 폰의 「저장됨」은 아내가 위 방법으로 파일을 받아 보내 주면 돼요.</div></details>
   </div>
-  <div id="info"></div>
+  <div id="offc"></div>
   <div class="ft"></div>
 </section>
 </div>
@@ -1389,39 +1393,53 @@ const IF=[
  ['rate','¥100 = 몇 원?','number','',0,'기본은 860원이에요. 여행 때 환율에 맞춰 바꿀 수 있어요.']
 ];
 const termHint=(k,v)=>k==='fOutTerm'?(v==='2'?'2터미널에는 기차역이 없어요. 건물 밖에서 무료 셔틀버스를 타고 1터미널로 가요 (약 7~9분).':v==='1'?'1터미널은 기차역과 바로 이어져요.':'항공권에서 터미널(1/2)을 확인해 주세요.'):(v==='2'?'1터미널 기차역에서 내려 무료 셔틀버스로 2터미널로 가요. 시간 여유 있게!':v==='1'?'난카이선 종점인 공항역에서 바로 이어져요.':'항공권에서 터미널(1/2)을 확인해 주세요.');
-/* ---------- 입국 QR (이 폰에만 저장, 서버에 안 올라가요) ---------- */
-function qrCard(){
- const q=store.get('qr',''),m=store.get('qrmemo','');
- return `<div class="card"><h3>🛬 입국 QR (Visit Japan Web)</h3>
- ${q?`<img src="${q}" alt="입국 QR" onclick="qrShow()" style="width:100%;max-width:240px;display:block;margin:0 auto 12px;background:#fff;border-radius:12px;padding:10px;border:2px solid var(--line)">
- <button class="btn big" onclick="qrShow()">🔍 크게 보여주기 (스캔용)</button>`
- :`<p class="hint" style="margin:0 0 12px">Visit Japan Web에서 받은 입국 QR 사진을 한 번 골라 두면, 공항에서 바로 크게 띄울 수 있어요. 이 폰 안에만 저장돼요.</p>`}
- <div class="fl" style="margin-top:12px"><span>메모</span><div class="fr"><input id="qrm" value="${esc(m)}" oninput="store.set('qrmemo',this.value)" placeholder="예: 11/30 간사이공항 입국 심사" maxlength="40"></div></div>
- <div class="act" style="margin-top:4px"><button class="btn ln big" onclick="$('#qrf').click()">${q?'사진 바꾸기':'📷 QR 사진 고르기'}</button>${q?`<button class="btn ln big" onclick="qrDel()">지우기</button>`:''}<input id="qrf" type="file" accept="image/*" style="display:none" onchange="qrPick(this.files[0])"></div>
- <p class="hint">백업 파일에도 QR이 들어가요. 백업 파일은 남에게 보내지 마세요.</p></div>`;
+/* ---------- 내 정보: 아이콘 허브 + 칸별 화면 ---------- */
+let infoSec=null;
+const ISEC=[['hotel','🏨','숙소'],['fout','✈️','가는 비행기'],['fback','🛫','오는 비행기'],['pass','🪪','여권'],['emerg','🆘','비상 연락'],['rate','💴','환율']];
+const IMORE=[['sync','👥','같이 쓰기'],['bak','💾','백업'],['imp','📥','지도 가져오기']];
+function igKeys(gi){let n=-1;const r=[];IF.forEach(f=>{if(f[0]==='sec')n++;else if(n===gi)r.push(f[0])});return r}
+function infoGo(s){infoSec=s||null;infoHTML();window.scrollTo(0,0)}
+/* ---------- QR 지갑 (이 폰에만 저장, 서버에 안 올라가요) ---------- */
+const QK=[['✈️','비행기 탑승권'],['🛬','입국 심사'],['🛃','세관'],['🚆','전철·교통권'],['🎟️','입장권·예약']];
+let qrIcon='🎫';
+function qrSave(a){try{localStorage.setItem('osk_qrs',JSON.stringify(a));return true}catch(e){gtoast('저장 공간이 부족해요. 안 쓰는 QR을 지워 주세요');return false}}
+function qrList(){let a=store.get('qrs',[]);if(!Array.isArray(a))a=[];const o=store.get('qr','');
+ if(o){a.push({id:'q'+Date.now().toString(36),n:store.get('qrmemo','')||'입국 심사',i:'🛬',img:o});if(qrSave(a)){store.set('qr','');store.set('qrmemo','')}}
+ return a}
+function qrImg(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);let d=c.toDataURL('image/png');if(d.length>260000)d=c.toDataURL('image/jpeg',.88);ok(d)};im.onerror=()=>no();im.src=r.result};r.onerror=()=>no();r.readAsDataURL(f)})}
+function qrKind(i,n){qrIcon=i;const e=$('#qrn');if(e)e.value=n}
+function qrForm(id){const q=id?qrList().find(x=>x.id===id):null;qrIcon=q?q.i:'🎫';
+ openOv(`<div class="ph2"><b>${q?'QR 고치기':'QR 추가'}</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <p class="hint" style="margin:0 0 8px">종류를 누르면 이름이 채워져요. 직접 써도 돼요.</p>
+ <div class="rtb">${QK.map(k=>`<button class="btn ln" onclick="qrKind('${k[0]}','${k[1]}')">${k[0]} ${k[1]}</button>`).join('')}</div>
+ <div class="fl"><span>이름</span><div class="fr"><input id="qrn" maxlength="20" value="${esc(q?q.n:'')}" placeholder="예: 11/30 입국 심사"></div></div>
+ <div class="act"><label class="btn big" style="cursor:pointer">📷 ${q?'사진 바꾸기':'QR 사진 고르기'}<input type="file" id="qrf" accept="image/*" style="display:none" onchange="qrPick(this,'${id||''}')"></label>${q?`<button class="btn ln big" onclick="qrRename('${id}')">이름만 저장</button>`:''}</div>
+ <p class="hint">캡처한 QR 그림이 또렷해야 잘 읽혀요. 사진은 이 폰 안에만 저장돼요.</p>`)}
+async function qrPick(inp,id){const f=inp.files&&inp.files[0];if(!f)return;let d;try{d=await qrImg(f)}catch(e){gtoast('사진을 읽지 못했어요');return}
+ const a=qrList(),nm=(($('#qrn')||{}).value||'').trim().slice(0,20);
+ if(id){const q=a.find(x=>x.id===id);if(!q)return;q.img=d;if(nm)q.n=nm;q.i=qrIcon}else a.push({id:'q'+Date.now().toString(36),n:nm||'QR',i:qrIcon,img:d});
+ if(!qrSave(a))return;closeOv();infoHTML();gtoast('QR을 저장했어요')}
+function qrRename(id){const a=qrList(),q=a.find(x=>x.id===id),nm=(($('#qrn')||{}).value||'').trim().slice(0,20);if(!q)return;if(nm)q.n=nm;q.i=qrIcon;if(!qrSave(a))return;closeOv();infoHTML();gtoast('저장했어요')}
+function qrDel(id){const q=qrList().find(x=>x.id===id);if(!q)return;ask('"'+q.n+'" QR을 지울까요?',()=>{qrSave(qrList().filter(x=>x.id!==id));infoHTML();gtoast('지웠어요')})}
+function qrFirst(id){const a=qrList(),k=a.findIndex(x=>x.id===id);if(k<1)return;a.unshift(a.splice(k,1)[0]);if(qrSave(a))infoHTML()}
+function qrShow(id){const q=qrList().find(x=>x.id===id);if(!q)return;
+ openOv(`<div class="ph2"><b>${q.i} ${esc(q.n)}</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div style="background:#fff;border-radius:16px;padding:16px"><img src="${q.img}" alt="${esc(q.n)} QR" style="width:100%;display:block"></div>
+ <p class="hint" style="margin-top:12px">화면 밝기를 최대로 올리면 잘 읽혀요.</p>`)}
+function qrWallet(){const a=qrList(),kb=Math.round(a.reduce((n,q)=>n+q.img.length,0)/1024);
+ return `<div class="card"><h3>🎫 QR 지갑</h3><p class="hint" style="margin:-4px 0 12px">탑승권·입국·세관 QR을 미리 넣어 두면 줄 서서 바로 꺼낼 수 있어요. 이 폰 안에만 저장돼요.</p>
+ ${a.length?a.map((q,i)=>`<div class="qrw"><img src="${q.img}" alt="" onclick="qrShow('${q.id}')"><div><b>${q.i} ${esc(q.n)}</b><button class="btn" onclick="qrShow('${q.id}')">🔍 크게 보기</button><div class="qrb"><button class="btn ln" onclick="qrForm('${q.id}')">고치기</button>${i?`<button class="btn ln" onclick="qrFirst('${q.id}')">맨 앞으로</button>`:''}<button class="btn ln" onclick="qrDel('${q.id}')">지우기</button></div></div></div>`).join(''):'<p class="hint">아직 없어요. 아래 버튼으로 첫 QR을 넣어 보세요.</p>'}
+ <div class="act" style="margin:12px 0"><button class="btn big" onclick="qrForm()">＋ QR 추가</button></div>
+ <p class="hint">저장 공간 약 ${kb}KB 사용 · 백업 파일에는 들어가요. 백업 파일은 남에게 보내지 마세요.</p></div>`}
+function backupCard(){
+ return `<div class="card"><h3>💾 백업</h3><p class="hint" style="margin:-4px 0 12px">폰을 바꾸거나 브라우저 데이터를 지우면 내용이 사라져요. 가끔 파일로 저장해 두세요.</p>
+ <div class="act" style="margin-bottom:16px"><button class="btn ln big" onclick="exportAll()">백업 파일 저장</button><button class="btn ln big" onclick="$('#imp').click()">백업 파일 불러오기</button><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importAll(this.files[0])"></div></div>`;
 }
-function qrPick(f){
- if(!f)return;
- const r=new FileReader();
- r.onload=()=>{const im=new Image();im.onload=()=>{
-  const s=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');
-  c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
-  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
-  store.set('qr',c.toDataURL('image/png'));infoHTML();gtoast('QR을 저장했어요');
- };im.onerror=()=>gtoast('사진을 읽지 못했어요');im.src=r.result};
- r.readAsDataURL(f);
-}
-function qrDel(){ask('저장한 입국 QR을 지울까요?',()=>{store.set('qr','');infoHTML();gtoast('지웠어요')})}
-function qrShow(){
- const q=store.get('qr','');if(!q)return;
- openOv(`<div class="ph2"><b>입국 QR</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
- <div style="background:#fff;border-radius:16px;padding:16px"><img src="${q}" alt="입국 QR" style="width:100%;display:block"></div>
- <p class="hint" style="margin-top:12px">${esc(store.get('qrmemo',''))||'입국 심사 QR'}<br>화면 밝기를 최대로 올리면 잘 읽혀요.</p>`);
-}
-function infoHTML(){
- let h=syncCard()+whoCard()+qrCard(),open=false;
+function igCard(gi){
+ let h='',n=-1;
  IF.forEach(f=>{
-  if(f[0]==='sec'){if(open)h+='</div>';h+=`<div class="card"><h3>${f[1]}</h3>`;open=true;return}
+  if(f[0]==='sec'){n++;if(n===gi)h+=`<div class="card"><h3>${f[1]}</h3>`;return}
+  if(n!==gi)return;
   const [k,lb,ty,ph,cp,hn]=f,v=k==='rate'?Math.round(INFO.rate*100):INFO[k];
   let inp;
   if(ty==='sel')inp=`<select id="i-${k}" onchange="setInfo('${k}',this.value)">${TERM.map(o=>`<option value="${o[0]}" ${v===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
@@ -1430,10 +1448,25 @@ function infoHTML(){
   h+=`<div class="fl"><span>${lb}</span><div class="fr">${inp}${cp?`<button class="btn ln" onclick="copyInfo('${k}')">복사</button>`:''}</div>${ty==='sel'?`<p class="hint" id="h-${k}">${termHint(k,v)}</p>`:''}${hn?`<p class="hint">${hn}</p>`:''}</div>`;
   if(k==='outDate')h+=`<button class="btn big" style="margin-bottom:12px" onclick="addrOv()">🚕 택시·직원에게 주소 크게 보여주기</button><button class="btn big ln" style="margin-bottom:16px" onclick="metroOv()">🚇 지하철·전철 노선도 보기</button>`;
  });
- if(open)h+='</div>';
- h+=`<div class="card"><h3>💾 백업</h3><p class="hint" style="margin:-4px 0 12px">폰을 바꾸거나 브라우저 데이터를 지우면 내용이 사라져요. 가끔 파일로 저장해 두세요.</p>
- <div class="act" style="margin-bottom:16px"><button class="btn ln big" onclick="exportAll()">백업 파일 저장</button><button class="btn ln big" onclick="$('#imp').click()">백업 파일 불러오기</button><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importAll(this.files[0])"></div></div>`;
- $('#info').innerHTML=h;syncStatus();
+ return h+'</div>';
+}
+function hubHTML(){
+ const a=qrList(),many=a.length>3;
+ const qt=a.length?`<div class="ig q4">${a.slice(0,3).map(q=>`<button class="it qk" onclick="qrShow('${q.id}')"><span class="ic">${q.i}</span>${esc(q.n)}</button>`).join('')}<button class="it" onclick="infoGo('qr')"><span class="ic">🎫</span>${many?'더 보기 ('+a.length+')':'관리·추가'}</button></div>`
+  :`<div class="ig"><button class="it qk" style="grid-column:1/-1;min-height:76px;flex-direction:row;gap:12px;font-size:16px" onclick="qrForm()"><span class="ic">🎫</span>QR 등록하기 (탑승권·입국·세관)</button></div>`;
+ const dot=gi=>gi===5?false:igKeys(gi).some(k=>k!=='fOutTerm'&&k!=='fBackTerm'&&INFO[k]);
+ const tiles=ISEC.map((t,gi)=>`<button class="it" onclick="infoGo('${t[0]}')">${dot(gi)?'<i class="dt"></i>':''}<span class="ic">${t[1]}</span>${t[2]}</button>`).join('')
+  +IMORE.map(t=>`<button class="it" onclick="infoGo('${t[0]}')">${t[0]==='sync'&&syncCfg().on?'<i class="dt"></i>':''}<span class="ic">${t[1]}</span>${t[2]}</button>`).join('');
+ return `<p class="ihd">QR 바로 꺼내기</p>${qt}<p class="ihd">내 정보</p><div class="ig">${tiles}</div>`}
+function infoHTML(){
+ const hub=!infoSec;let h='';
+ if(hub)h=hubHTML();
+ else{h=`<button class="btn ln" style="margin:0 0 14px" onclick="infoGo()">← 내 정보로</button>`;
+  const gi=ISEC.findIndex(s=>s[0]===infoSec);
+  if(gi>=0)h+=igCard(gi);else if(infoSec==='qr')h+=qrWallet();else if(infoSec==='sync')h+=syncCard()+whoCard();else if(infoSec==='bak')h+=backupCard()}
+ $('#info').innerHTML=h;
+ [['infonote',hub],['offc',hub],['impc',infoSec==='imp']].forEach(q=>{const e=document.getElementById(q[0]);if(e)e.style.display=q[1]?'':'none'});
+ syncStatus();
 }
 function setInfo(k,v){
  if(k==='rate'){const n=+v;INFO.rate=n>0?n/100:8.6}else INFO[k]=v;
