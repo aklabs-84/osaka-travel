@@ -1296,8 +1296,8 @@ async function syncNow(manual){
   ui('down');if(manual)await new Promise(r=>setTimeout(r,700));   /* 너무 빨리 사라지지 않게 */
   if(changed||JSON.stringify(syncLocalDoc())!==sent){syncAgain=true}   /* 보내는 동안 또 고쳤으면 덮지 않고 다시 */
   else syncApply(j.doc);
-  const n=syncCfg();n.last=Date.now();store.set('sync',n);syncMsg='';
-  okUi=true;
+  const n=syncCfg();n.last=Date.now();if(typeof j.sheet==='string'&&SHEET_RE.test(j.sheet)){n.sheet=j.sheet;n.sheetFor=c.url}store.set('sync',n);syncMsg='';
+  okUi=true;sheetBtn();
   if(manual)gtoast('동기화했어요');
  }catch(e){
   syncMsg=e.message==='code'?'비밀 코드가 달라요':(e.message==='offline'?'인터넷이 없어요. 연결되면 자동으로 올려요':'연결이 안 돼요. 주소와 코드를 확인해 주세요');
@@ -1327,7 +1327,9 @@ function syncStatus(){
  e.textContent=syncMsg||(c.on?(c.last?'마지막 동기화: '+new Date(c.last).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'}):'아직 동기화 전이에요'):'꺼져 있어요');
  e.style.color=syncMsg?'var(--warn,#c0392b)':'';
 }
-function syncSet(k,v){const c=syncCfg();c[k]=v;store.set('sync',c)}
+function syncSet(k,v){const c=syncCfg();c[k]=v;if(k==='url'&&v.trim()!==(c.sheetFor||''))c.sheet='';store.set('sync',c);if(k==='url')sheetBtn()}
+const SHEET_RE=/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/;
+function sheetBtn(){const e=$('#sy-sheet');if(!e)return;const c=syncCfg();e.innerHTML=c.on&&c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}
 function syncToggle(on){
  const c=syncCfg();
  if(on&&(!c.url||!c.code)){gtoast('주소와 비밀 코드를 먼저 넣어 주세요');infoHTML();return}
@@ -1342,6 +1344,7 @@ function syncCard(){
  <div class="fl"><span>구글 시트 주소</span><div class="fr"><input id="sy-url" type="url" value="${esc(c.url)}" oninput="syncSet('url',this.value)" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
  <div class="fl"><span>비밀 코드</span><div class="fr"><input id="sy-code" type="password" autocomplete="off" value="${esc(c.code)}" oninput="syncSet('code',this.value)" placeholder="시트에 적은 비밀 코드"></div></div>
  <div class="act" style="margin-bottom:8px">${c.on?`<button class="btn big" id="sy-btn" onclick="syncNow(true)">지금 맞추기</button><div class="sybar" id="sy-bar"><i></i></div><button class="btn ln big" onclick="syncToggle(false)">끄기</button>`:`<button class="btn big" onclick="syncToggle(true)">같이 쓰기 켜기</button>`}</div>
+ <div class="act" id="sy-sheet" style="margin-bottom:8px">${c.on&&c.sheet&&SHEET_RE.test(c.sheet)?`<a class="btn ln big" target="_blank" rel="noopener" href="${esc(c.sheet)}">📊 구글 스프레드시트 열기</a>`:''}</div>
  <p class="hint" id="sy-st" style="margin:0 0 12px"></p></div>`;
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();const n=new Date().toDateString();if(n!==lastDay){lastDay=n;dd();const t=todayIdx();if(t>=0)setDay(t);else days()}}});

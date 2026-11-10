@@ -64,7 +64,7 @@ function doPost(e) {
     write_(merged);
     let rerr = '';
     if (body.rep) { try { drawReport_(body.rep); } catch (err) { rerr = String(err); } }
-    return out_({ ok: 1, doc: merged, rerr: rerr });
+    return out_({ ok: 1, doc: merged, rerr: rerr, sheet: SpreadsheetApp.getActiveSpreadsheet().getUrl() });   // sheet: 앱의 '스프레드시트 열기' 버튼용
   } finally {
     lock.releaseLock();
   }
