@@ -136,6 +136,19 @@ body.mapmode #ms{display:block}
 .maplibregl-ctrl-attrib{font-size:10px!important}
 .mtop{position:absolute;left:12px;right:70px;top:calc(12px + env(safe-area-inset-top));z-index:5;background:var(--card);border-radius:14px;padding:10px 14px;box-shadow:0 3px 10px rgba(0,0,0,.22);font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mtop small{font-weight:600;color:var(--sub);font-size:13.5px}
+.mtop{cursor:pointer}.mtop::after{content:'🔍';margin-left:auto;font-size:16px}
+#ms.picking .mtop{cursor:default}#ms.picking .mtop::after{content:none}
+.msrch{position:absolute;left:12px;right:70px;top:calc(12px + env(safe-area-inset-top));z-index:7;background:var(--card);border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.28);display:none;flex-direction:column;max-height:min(60%,420px);overflow:hidden}
+.msrch.on{display:flex}
+.msrch .sr{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-bottom:1px solid var(--line)}
+.msrch input{flex:1;min-width:0;border:0;background:transparent;color:var(--tx);font-size:16px;font-weight:700;padding:8px 0;outline:none}
+.msrch .sx{width:40px;height:40px;border-radius:10px;font-size:18px;font-weight:800;color:var(--sub)}
+.msrch .sl{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.msrch .si{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 14px;min-height:52px;border-bottom:1px solid var(--line)}
+.msrch .si:active,.msrch .si:hover{background:var(--bg)}
+.msrch .si b{display:block;font-size:15.5px}.msrch .si span.s{display:block;font-size:13px;color:var(--sub);margin-top:1px}
+.msrch .si .ic2{font-size:22px;flex:none}
+.msrch .sn{padding:16px 14px;color:var(--sub);font-weight:700;font-size:14.5px}
 .tools{position:absolute;right:10px;top:calc(12px + env(safe-area-inset-top));z-index:5;display:flex;flex-direction:column;gap:8px}
 .tools button{width:48px;height:48px;background:var(--card);border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:19px;font-weight:700;line-height:1;text-align:center;transition:transform .1s,background .15s}
 .tools button small{font-size:10px;font-weight:800;margin-top:1px}
@@ -375,6 +388,7 @@ nav.tabs button.on:after{transform:scaleX(1)}
 <div id="ms">
   <div id="map"></div>
   <div class="mtop" id="mtop">🗺️ 오사카 <small>대략적인 위치예요</small></div>
+  <div class="msrch" id="msrch"><div class="sr"><span>🔍</span><input id="msq" type="search" placeholder="추가한 장소 이름·메모로 찾기" autocomplete="off" enterkeyhint="search"><button class="sx" id="msx" aria-label="닫기">✕</button></div><div class="sl" id="msl"></div></div>
   <button class="madd" id="bAdd">＋ 가고 싶은 곳 추가</button>
   <div class="vw" id="vwm"></div>
   <div class="tools">
@@ -815,6 +829,7 @@ function railHTML(){
  $('#rail').innerHTML=PLACES.map((p,i)=>p.lat==null||!pShow(p)?'':`<div class="pcard" id="pc${i}" data-i="${i}"><div class="t1"><span class="ic ${PC[p.c]||'pc-do'}">${esc(p.i)}</span><div><b>${esc(p.n)}${obadge(p)}</b><span class="s">${esc(subOf(p))}</span></div></div><div class="t2"><span class="eta">${distText(p)}</span><a class="btn" target="_blank" rel="noopener" href="${esc(mapsHref(p))}">구글 지도 ↗</a>${p.home?'':`<button class="btn ln" aria-label="고치기" onclick="openSheet('${p.id}')">✎</button>`}</div>${p.chk?'<div class="chk">📍 위치 확인 필요 · 어림 위치예요</div>':''}<div class="t3"><button class="btn ln" onclick="repick('${p.id}')">📍 위치 다시 잡기</button>${p.home?'':`<button class="btn ln dg" onclick="delPlace('${p.id}')">🗑 지우기</button>`}</div></div>`).join('');
 }
 function bindRail(){
+ if(!window._srchOn){window._srchOn=1;srchInit()}
  /* 카드를 누르면 그 장소로 지도가 이동 (안의 버튼·링크는 제외) */
  $('#rail').addEventListener('click',e=>{if(e.target.closest('a,button'))return;const c=e.target.closest('.pcard');if(c)pick(+c.dataset.i)});
  let t;$('#rail').addEventListener('scroll',()=>{if(scrolling)return;clearTimeout(t);t=setTimeout(()=>{const r=$('#rail'),c=r.getBoundingClientRect().left+r.clientWidth/2;let best=-1,bd=1e9;r.querySelectorAll('.pcard').forEach(e=>{const b=e.getBoundingClientRect(),d=Math.abs(b.left+b.width/2-c);if(d<bd){bd=d;best=+e.dataset.i}});if(best>=0)pick(best,true)},120)});
@@ -824,6 +839,22 @@ function pick(i,fromRail){
  const e=$('#pc'+i);
  if(i>=0&&e&&!fromRail){scrolling=true;e.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});setTimeout(()=>scrolling=false,600)}
  OMap.select(i);
+}
+function srchOpen(on){
+ if(on&&picking)return;
+ $('#msrch').classList.toggle('on',on);
+ if(on){$('#msq').value='';srchList();setTimeout(()=>$('#msq').focus(),50)}else $('#msq').blur();
+}
+function srchList(){
+ const q=$('#msq').value.trim().toLowerCase(),L=$('#msl');
+ const r=PLACES.map((p,i)=>({p,i})).filter(o=>o.p.lat!=null&&pShow(o.p)&&(!q||[o.p.n,o.p.memo,o.p.d,KIND[o.p.c]].join(' ').toLowerCase().includes(q))).slice(0,30);
+ L.innerHTML=r.length?r.map(o=>`<button class="si" data-i="${o.i}"><span class="ic2">${esc(o.p.i)}</span><div><b>${esc(o.p.n)}</b><span class="s">${esc(subOf(o.p))}</span></div></button>`).join(''):`<div class="sn">찾는 장소가 없어요</div>`;
+}
+function srchInit(){
+ $('#mtop').addEventListener('click',()=>srchOpen(true));
+ $('#msx').addEventListener('click',()=>srchOpen(false));
+ $('#msq').addEventListener('input',srchList);
+ $('#msl').addEventListener('click',e=>{const b=e.target.closest('.si');if(!b)return;srchOpen(false);pick(+b.dataset.i)});
 }
 function labSet(on,keep){OMap.setLabels(on);const b=$('#bLab');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);if(!keep)store.set('maplabels',on?1:0)}
 function mapOpen(){
