@@ -56,7 +56,8 @@ function doPost(e) {
   if (!body || body.k !== SECRET || SECRET.indexOf('바꾸세요') >= 0) return out_({ ok: 0, error: 'code' });
   if (body.act === 'receipt') return out_(receipt_(body.img));   // 영수증 읽기(시트는 건드리지 않음)
   if (body.act === 'resolve') return out_(resolve_(body.url));   // 구글 지도 짧은 링크 풀기(시트는 건드리지 않음)
-  if (body.act === 'list') return out_(list_(body.url));         // 구글 지도 공유 목록의 장소 읽기(시트는 건드리지 않음)
+  if (body.act === 'list') return out_(list_(body.url));
+  if (body.act === 'file') return out_(file_(body.url));         // 오사카 메트로 노선도 그림 받아 주기(시트는 건드리지 않음)         // 구글 지도 공유 목록의 장소 읽기(시트는 건드리지 않음)
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -67,6 +68,23 @@ function doPost(e) {
     return out_({ ok: 1, doc: merged, rerr: rerr, sheet: SpreadsheetApp.getActiveSpreadsheet().getUrl() });   // sheet: 앱의 '스프레드시트 열기' 버튼용
   } finally {
     lock.releaseLock();
+  }
+}
+
+/* ================= 노선도 그림 받아 주기 =================
+ * 앱에서 직접 받으면 공식 사이트가 막아서(보안 규칙) 이 스크립트가 대신 받아 앱에 넘겨 준다.
+ * 오사카 메트로 노선도 그림 주소만 허용한다(아무 주소나 받아 주지 않도록).
+ */
+function file_(url) {
+  try {
+    const u = String(url || '').trim();
+    if (!/^https:\/\/subway\.osakametro\.co\.jp\/img\/[A-Za-z0-9_\-]+\.(gif|png|jpg)$/.test(u)) return { ok: 0, error: 'host' };
+    const r = UrlFetchApp.fetch(u, { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return { ok: 0, error: 'http' };
+    const b = r.getBlob();
+    return { ok: 1, type: b.getContentType() || 'image/gif', b64: Utilities.base64Encode(b.getBytes()) };
+  } catch (err) {
+    return { ok: 0, error: String(err) };
   }
 }
 

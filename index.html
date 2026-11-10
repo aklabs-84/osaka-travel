@@ -287,6 +287,11 @@ textarea{resize:vertical;line-height:1.5}
 .pcard{cursor:pointer}
 .phr .rd{font-size:16px;color:var(--sea2);font-weight:700}.phr .ko{font-size:16px;color:var(--sub)}
 :root[data-theme=dark] .phr .rd{color:var(--sea)}
+.mzb{display:flex;align-items:center;gap:10px;margin-bottom:10px}.mzb span{flex:1;text-align:center;font-weight:800;font-size:18px}.mzb .btn{min-height:46px}
+.mvw{overflow:auto;border-radius:12px;background:#fff;border:2px solid var(--line);height:62vh;-webkit-overflow-scrolling:touch}.mvw img{display:block;max-width:none}
+.stq{width:100%;min-height:50px;font:inherit;font-size:17px;padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);margin-bottom:10px}
+.str{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}.stn{min-width:0}.stn b{display:block;font-size:19px;line-height:1.3}.stn span{display:block;font-size:14.5px;color:var(--sub)}.stn small{display:block;font-size:14px;color:var(--sea2);font-weight:700}
+.stcs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.stc{display:inline-block;color:#fff;font-family:var(--font-num);font-weight:800;font-size:15px;padding:3px 8px;border-radius:8px;line-height:1.3}
 .mapl{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}.mapl .btn{display:flex;align-items:center;gap:12px;text-align:left;min-height:64px;padding:10px 14px;justify-content:flex-start}.mapl .lmi{font-size:28px}.mapl .lmt{flex:1;min-width:0}.mapl .lmt b{display:block;font-size:19px;line-height:1.3}.mapl .lmt small{display:block;font-size:14.5px;color:var(--sub);font-weight:400;line-height:1.4}.mapl .lma{font-size:20px;color:var(--sub)}
 .lgtog{display:flex;gap:8px;margin-bottom:12px}.lgtog button{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);font:inherit;font-size:18px;font-weight:700}.lgtog button.on{background:var(--sea2);border-color:var(--sea2);color:#fff}:root[data-theme=dark] .lgtog button.on{color:#0A1D26}
 .bigaddr{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 4px 0 var(--line);margin-bottom:12px}
@@ -1085,17 +1090,82 @@ function addrOv(l){
  <p class="hint">${ja?'택시 기사님이나 직원에게 이 화면을 보여 주세요. (일본어 표시)':'택시 기사님이나 직원에게 이 화면을 보여 주세요. (영어 표시)'}</p>`);
 }
 
-/* ---------- 노선도 (공식 사이트로 연결) ---------- */
+/* ---------- 노선도 (공식 사이트로 연결 + 폰에 저장) ---------- */
 const MAPS=[
  ['🚇','오사카 메트로','숙소 근처 · 시내 이동 (미도스지선 등)','https://subway.osakametro.co.jp/ko/guide/routemap.php'],
  ['🚆','JR 서일본 · 오사카 지역','JR 오사카 환상선 · 우메다·텐노지 (PDF)','https://www.westjr.co.jp/global/kr/timetable/pdf/map_osaka.pdf'],
  ['🚆','JR 서일본 · 간사이 전체','공항 · 교토 · 고베 · 나라까지 (PDF)','https://www.westjr.co.jp/global/kr/timetable/pdf/map_kansai.pdf'],
  ['🚃','한큐 전철','우메다 ↔ 고베·교토·다카라즈카','https://www.hankyu.co.jp/kr/station/rosen/index.html'],
  ['✈️','난카이 전철','난바 ↔ 간사이공항 · 고야산','https://www.nankai.co.jp/traffic/railmap.html']];
-function metroOv(){
+const METRO_IMG='https://subway.osakametro.co.jp/img/osakametro_rosenzu_20250404.gif';
+/* 폰 안 저장소(IndexedDB): 노선도 그림 한 장 */
+const fdb=()=>new Promise((ok,no)=>{try{const q=indexedDB.open('osk_files',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)}catch(e){no(e)}});
+async function fGet(k){const d=await fdb();return new Promise((ok,no)=>{const r=d.transaction('f').objectStore('f').get(k);r.onsuccess=()=>ok(r.result||null);r.onerror=()=>no(r.error)})}
+async function fPut(k,v){const d=await fdb();return new Promise((ok,no)=>{const t=d.transaction('f','readwrite');t.objectStore('f').put(v,k);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)})}
+async function metroOv(){
+ let have=null;try{have=await fGet('metro')}catch(e){}
  openOv(`<div class="ph2"><b>지하철·전철 노선도</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="phr"><b>🚇 오사카 메트로 노선도 ${have?'<small>(폰에 저장됨)</small>':''}</b>
+  <p class="hint" style="margin:4px 0 10px">${have?'인터넷 없이도 바로 크게 볼 수 있어요.':'한 번만 저장해 두면 인터넷 없이도 볼 수 있어요. (일본어·영어 표기)'}</p>
+  <div style="display:flex;flex-direction:column;gap:8px">
+   ${have?`<button class="btn big" onclick="metroView()">🔍 노선도 크게 보기</button><button class="btn big ln" id="mfb" onclick="metroSave()">↻ 다시 받아 저장하기</button>`:`<button class="btn big" id="mfb" onclick="metroSave()">📥 폰에 저장하기</button>`}
+   <button class="btn big ln" onclick="stOv()">🔤 한국어 역 이름표 (한글로 찾기)</button>
+   <label class="btn ln" style="min-height:46px;cursor:pointer">📂 받아 둔 그림 파일 직접 넣기<input type="file" accept="image/*" hidden onchange="metroFile(this)"></label>
+  </div></div>
  <div class="mapl">${MAPS.map(m=>`<a class="btn ln" target="_blank" rel="noopener" href="${esc(m[3])}"><span class="lmi">${m[0]}</span><span class="lmt"><b>${esc(m[1])}</b><small>${esc(m[2])}</small></span><span class="lma">↗</span></a>`).join('')}</div>
- <p class="hint">각 회사의 공식 노선도가 새 창으로 열려요. 인터넷이 필요해요. 손가락 두 개로 벌리면 크게 볼 수 있어요.</p>`);
+ <p class="hint">아래 목록은 각 회사의 공식 노선도(새 창)예요. 인터넷이 필요해요.</p>`);
+}
+async function metroSave(){
+ const c=syncCfg(),b=$('#mfb');
+ if(!c.on||!c.url||!c.code){gtoast('저장하려면 내 정보의 "같이 쓰기"를 먼저 연결해 주세요. 아니면 아래 "그림 파일 직접 넣기"를 써 주세요');return}
+ const t0=b.textContent;b.disabled=true;b.textContent='받는 중…';
+ try{
+  const r=await fetch(c.url,{method:'POST',body:JSON.stringify({k:c.code,act:'file',url:METRO_IMG}),redirect:'follow'});
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error||'fail');
+  if(!j.b64)throw new Error('old');
+  const bin=atob(j.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  await fPut('metro',new Blob([u],{type:j.type||'image/gif'}));
+  gtoast('저장했어요! 이제 인터넷 없이도 볼 수 있어요');metroOv();
+ }catch(e){
+  const s=e.message;
+  gtoast(s==='old'?'앱스스크립트를 새 버전으로 다시 배포해 주세요':s==='code'?'비밀 코드가 달라요':'못 받았어요. 인터넷·같이 쓰기 연결을 보거나 그림 파일을 직접 넣어 주세요');
+  if(b){b.disabled=false;b.textContent=t0}
+ }
+}
+async function metroFile(inp){
+ const f=inp.files&&inp.files[0];if(!f)return;
+ if(!/^image\//.test(f.type)){gtoast('그림 파일(PNG·GIF·JPG)만 넣을 수 있어요. PDF는 사진으로 캡처해 넣어 주세요');return}
+ try{await fPut('metro',f);gtoast('저장했어요!');metroOv()}catch(e){gtoast('저장이 안 됐어요. 폰 저장 공간을 확인해 주세요')}
+}
+let mZ=4,mUrl='';
+async function metroView(z){
+ if(z)mZ=Math.max(1,Math.min(6,mZ+z));
+ if(!mUrl){let b=null;try{b=await fGet('metro')}catch(e){}if(!b){gtoast('저장된 그림이 없어요');return}mUrl=URL.createObjectURL(b)}
+ const old=document.querySelector('#mvw'),sx=old?old.scrollLeft/Math.max(1,old.scrollWidth):0,sy=old?old.scrollTop/Math.max(1,old.scrollHeight):0;
+ openOv(`<div class="ph2"><b>오사카 메트로 노선도</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="mzb"><button class="btn ln" onclick="metroView(-1)" aria-label="작게">－ 작게</button><span>${mZ}배</span><button class="btn" onclick="metroView(1)" aria-label="크게">＋ 크게</button></div>
+ <div id="mvw" class="mvw"><img src="${mUrl}" alt="오사카 메트로 노선도" style="width:${mZ*100}%"></div>
+ <p class="hint">손가락으로 끌면 움직여요. 번호(M16처럼)는 아래 역 이름표에서 한글로 찾을 수 있어요. <a href="#" onclick="stOv();return false" style="color:var(--sea2);font-weight:800">🔤 역 이름표</a></p>`);
+ const w=$('#mvw');if(w&&old){w.scrollLeft=sx*w.scrollWidth;w.scrollTop=sy*w.scrollHeight}
+}
+/* 한국어 역 이름표 — 오사카 메트로 공식 노선도에서 확인한 역 번호 */
+const LINES=[['M','미도스지선','#E5171F'],['Y','요쓰바시선','#0079C2'],['C','주오선','#019A66'],['T','다니마치선','#522886'],['S','센니치마에선','#E96FA7'],['K','사카이스지선','#814721'],['N','나가호리쓰루미료쿠치선','#A9CC51']];
+const STN=[
+ ['기타하마','北浜','Kitahama','K14','🏨 우리 숙소'],['사카이스지혼마치','堺筋本町','Sakaisuji-Hommachi','K15 C17','라이프 마트 가는 길'],['나가호리바시','長堀橋','Nagahoribashi','K16 N16',''],['닛폰바시','日本橋','Nippombashi','K17 S17','도톤보리 가까움'],['에비스초','恵美須町','Ebisucho','K18',''],['도부쓰엔마에','動物園前','Dobutsuen-mae','K19 M22',''],['덴가차야','天下茶屋','Tengachaya','K20',''],
+ ['우메다','梅田','Umeda','M16','한큐·JR 오사카역 가까움'],['요도야바시','淀屋橋','Yodoyabashi','M17',''],['혼마치','本町','Hommachi','M18 Y13 C16',''],['신사이바시','心斎橋','Shinsaibashi','M19 N15','쇼핑 거리'],['난바','なんば','Namba','M20 Y15 S16','난카이 난바역(공항 가는 길) 가까움'],['다이코쿠초','大国町','Daikokucho','M21 Y16',''],['덴노지','天王寺','Tennoji','M23 T27',''],['신오사카','新大阪','Shin-Osaka','M13','신칸센'],
+ ['니시우메다','西梅田','Nishi-Umeda','Y11',''],['욧쓰바시','四ツ橋','Yotsubashi','Y14',''],['히가시우메다','東梅田','Higashi-Umeda','T20',''],['미나미모리마치','南森町','Minamimorimachi','T21 K13',''],['덴마바시','天満橋','Temmabashi','T22','게이한 환승'],['다니마치 4초메','谷町四丁目','Tanimachi 4-chome','T23 C18',''],['다니마치 6초메','谷町六丁目','Tanimachi 6-chome','T24 N18',''],['다니마치 9초메','谷町九丁目','Tanimachi 9-chome','T25 S18',''],
+ ['아와자','阿波座','Awaza','C15 S13',''],['구조','九条','Kujo','C14',''],['모리노미야','森ノ宮','Morinomiya','C19 N20',''],['교바시','京橋','Kyobashi','N22','JR 환승'],['오사카 비즈니스 파크','大阪ビジネスパーク','Osaka Business Park','N21','']];
+function stOv(q){
+ q=(q||'').trim();const ql=q.toLowerCase().replace(/\s/g,'');
+ const L=STN.filter(r=>!ql||(r[0]+r[1]+r[2]+r[3]+r[4]).toLowerCase().replace(/\s/g,'').includes(ql));
+ const chip=c=>{const l=LINES.find(x=>x[0]===c[0]);return `<span class="stc" style="background:${l?l[2]:'#666'}">${c}</span>`};
+ const keep=document.activeElement&&document.activeElement.id==='stq';
+ openOv(`<div class="ph2"><b>한국어 역 이름표</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <input id="stq" class="stq" type="search" placeholder="한글·일본어·영어·번호로 찾기 (예: 난바, M20)" value="${esc(q)}" oninput="stOv(this.value)">
+ <div class="stl">${L.map(r=>`<div class="str"><div class="stn"><b>${esc(r[0])}</b><span>${esc(r[1])} · ${esc(r[2])}</span>${r[4]?`<small>${esc(r[4])}</small>`:''}</div><div class="stcs">${r[3].split(' ').map(chip).join('')}</div></div>`).join('')||'<div class="empty">없어요. 다른 글자로 찾아 보세요</div>'}</div>
+ <p class="hint">노선 색: ${LINES.map(l=>`<span class="stc" style="background:${l[2]}">${l[0]}</span> ${l[1]}`).join(' · ')}<br>이 번호는 오사카 메트로 공식 노선도에서 확인했어요. 숙소 주변·자주 가는 역 위주라 모든 역이 있지는 않아요.</p>`);
+ if(keep||q){const e=$('#stq');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}}
 }
 
 /* ---------- 가계부 ---------- */
