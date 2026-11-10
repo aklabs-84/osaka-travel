@@ -288,6 +288,7 @@ textarea{resize:vertical;line-height:1.5}
 .phr .rd{font-size:16px;color:var(--sea2);font-weight:700}.phr .ko{font-size:16px;color:var(--sub)}
 :root[data-theme=dark] .phr .rd{color:var(--sea)}
 .mzb{display:flex;align-items:center;gap:10px;margin-bottom:10px}.mzb span{flex:1;text-align:center;font-weight:800;font-size:18px}.mzb .btn{min-height:46px}
+.krt{fill:#222;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.krt.kb{font-weight:900}.krw{font-size:13px;fill:#666;font-weight:700}.kvw svg{display:block;width:100%;height:auto}
 .mvw{overflow:auto;border-radius:12px;background:#fff;border:2px solid var(--line);height:62vh;-webkit-overflow-scrolling:touch}.mvw img{display:block;max-width:none}
 .stq{width:100%;min-height:50px;font:inherit;font-size:17px;padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);margin-bottom:10px}
 .str{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}.stn{min-width:0}.stn b{display:block;font-size:19px;line-height:1.3}.stn span{display:block;font-size:14.5px;color:var(--sub)}.stn small{display:block;font-size:14px;color:var(--sea2);font-weight:700}
@@ -1111,7 +1112,10 @@ async function fPut(k,v){const d=await fdb();return new Promise((ok,no)=>{const 
 async function metroOv(){
  let have=null;try{have=await fGet('metro')}catch(e){}
  openOv(`<div class="ph2"><b>지하철·전철 노선도</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
- <div class="phr"><b>🚇 오사카 메트로 노선도 ${have?'<small>(폰에 저장됨)</small>':''}</b>
+ <div class="phr"><b>🇰🇷 한글 노선도 <small>(앱 안에 있어요 · 인터넷 필요 없음)</small></b>
+  <p class="hint" style="margin:4px 0 10px">여행에서 자주 타는 6개 노선을 한글로 그렸어요. 숙소 기타하마역도 표시돼 있어요.</p>
+  <button class="btn big" style="width:100%" onclick="krMap()">🗺️ 한글 노선도 보기</button></div>
+ <div class="phr"><b>🚇 오사카 메트로 공식 노선도 ${have?'<small>(폰에 저장됨)</small>':''}</b>
   <p class="hint" style="margin:4px 0 10px">${have?'인터넷 없이도 바로 크게 볼 수 있어요.':'한 번만 저장해 두면 인터넷 없이도 볼 수 있어요. (일본어·영어 표기)'}</p>
   <div style="display:flex;flex-direction:column;gap:8px">
    ${have?`<button class="btn big" onclick="metroView()">🔍 노선도 크게 보기</button><button class="btn big ln" id="mfb" onclick="metroSave()">↻ 다시 받아 저장하기</button>`:`<button class="btn big" id="mfb" onclick="metroSave()">📥 폰에 저장하기</button>`}
@@ -1154,6 +1158,49 @@ async function metroView(z){
  <div id="mvw" class="mvw"><img src="${mUrl}" alt="오사카 메트로 노선도" style="width:${mZ*100}%"></div>
  <p class="hint">손가락으로 끌면 움직여요. 번호(M16처럼)는 아래 역 이름표에서 한글로 찾을 수 있어요. <a href="#" onclick="stOv();return false" style="color:var(--sea2);font-weight:800">🔤 역 이름표</a></p>`);
  const w=$('#mvw');if(w&&old){w.scrollLeft=sx*w.scrollWidth;w.scrollTop=sy*w.scrollHeight}
+}
+/* 한글 노선도 — 공식 지도를 베끼지 않고 새로 그린 약도 (역 이름·순서는 공식 역 목록 기준, 거리·위치는 대략) */
+const KN={SO:['신오사카',470,60,'r'],NN:['니시나카지마|미나미가타',470,130,'r'],NK:['나카쓰',470,200,'l'],UM:['우메다',470,290,'t'],YD:['요도야바시',470,420,'r'],HM:['혼마치',470,520,'tr'],SS:['신사이바시',470,610,'r'],NB:['난바',470,700,'bl'],DK:['다이코쿠초',470,790,'r'],DB:['도부쓰엔마에',520,860,'r'],TN:['덴노지',640,920,'r'],
+ TJ:['덴진바시스지|6초메',760,80,'r'],NZ:['나카자키초',640,180,'l'],HU:['히가시|우메다',570,290,'r'],MM:['미나미모리마치',620,360,'r'],TM:['덴마바시',700,430,'r'],T4:['다니마치|4초메',740,520,'tr'],T6:['다니마치6초메',760,600,'r'],T9:['다니마치9초메',760,700,'tr'],ST:['시텐노지마에|유히가오카',700,820,'r'],AB:['아베노',640,1000,'r'],
+ NU:['니시|우메다',360,300,'l'],HG:['히고바시',360,390,'l'],YT:['요쓰바시',390,610,'l'],HN:['하나조노초',410,860,'l'],KS:['기시노사토',360,920,'l'],TD:['다마데',320,980,'l'],KK:['기타카가야',290,1040,'l'],SM:['스미노에코엔',250,1100,'l'],
+ YU:['유메시마',85,520,'u'],CS:['코스모스퀘어',140,520,'u'],OK:['오사카코',195,520,'u'],AS:['아사시오바시',250,520,'u'],BT:['벤텐초',305,520,'u'],KJ:['구조',360,520,'u'],AW:['아와자',415,520,'u'],SH:['사카이스지|혼마치',580,520,'tr'],MR:['모리노미야',860,520,'t'],MD:['미도리바시',940,520,'t'],FK:['후카에바시',1020,520,'t'],TK:['다카이다',1100,520,'t'],
+ ND:['노다한신',90,340,'r'],TG:['다마가와',200,420,'r'],NG:['니시|나가호리',320,590,'l'],SK:['사쿠라가와',380,670,'l'],TS:['쓰루하시',950,700,'t'],
+ OG:['오기마치',720,200,'r'],KH:['기타하마',600,440,'l'],NH:['나가호리바시',580,610,'r'],NP:['닛폰바시',580,700,'br'],EB:['에비스초',580,790,'r'],TG2:['덴가차야',490,950,'l']};
+const KL=[['M','미도스지선','#E5171F',['SO','NN','NK','UM','YD','HM','SS','NB','DK','DB','TN']],
+ ['T','다니마치선','#522886',['TJ','NZ','HU','MM','TM','T4','T6','T9','ST','TN','AB']],
+ ['Y','요쓰바시선','#0079C2',['NU','HG','HM','YT','NB','DK','HN','KS','TD','KK','SM']],
+ ['C','주오선','#019A66',['YU','CS','OK','AS','BT','KJ','AW','HM','SH','T4','MR','MD','FK','TK']],
+ ['S','센니치마에선','#E96FA7',['ND','TG','AW','NG','SK','NB','NP','T9','TS']],
+ ['K','사카이스지선','#814721',['TJ','OG','MM','KH','SH','NH','NP','EB','DB','TG2']]];
+let kZ=3;
+function krSvg(){
+ const cnt={},seg={};KL.forEach(l=>{l[3].forEach(n=>cnt[n]=(cnt[n]||0)+1);for(let i=0;i<l[3].length-1;i++){const k=[l[3][i],l[3][i+1]].sort().join('-');(seg[k]=seg[k]||[]).push(l[0])}});
+ let g='',lab='',dots='';
+ KL.forEach(l=>{let d='';for(let i=0;i<l[3].length-1;i++){const a=KN[l[3][i]],b=KN[l[3][i+1]],u=seg[[l[3][i],l[3][i+1]].sort().join('-')],n=u.length,o=(u.indexOf(l[0])-(n-1)/2)*8;
+  let dx=0,dy=0;if(n>1){const L=Math.hypot(b[1]-a[1],b[2]-a[2])||1;dx=-(b[2]-a[2])/L*o;dy=(b[1]-a[1])/L*o}
+  d+=`M${a[1]+dx},${a[2]+dy}L${b[1]+dx},${b[2]+dy}`}
+  g+=`<path d="${d}" stroke="${l[2]}" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`});
+ g+=`<path d="M470,290L570,290M470,290L360,300" stroke="#8a8a8a" stroke-width="4" stroke-dasharray="3 7" fill="none" stroke-linecap="round"/><text x="520" y="318" class="krw" text-anchor="middle">걸어서 환승</text>`;
+ Object.keys(KN).forEach(id=>{const n=KN[id],x=n[1],y=n[2],m=cnt[id]>1,r=m?11:7.5;
+  dots+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#222" stroke-width="${m?4:3}"/>`;
+  const big=/우메다|난바|덴노지|신사이바시|신오사카|혼마치$/.test(n[0].replace('|',''))&&!/사카이스지/.test(n[0]);
+  const t=n[0].split('|'),pos=n[3],fs=big?19:15.5,off=r+7;let ax='start',tx=x+off,ty=y+5-(t.length-1)*8,rot='';
+  if(pos==='l'){ax='end';tx=x-off}else if(pos==='t'){ax='middle';tx=x;ty=y-off-(t.length-1)*17}else if(pos==='b'){ax='middle';tx=x;ty=y+off+12}
+  else if(pos==='tr'){ax='start';tx=x+off;ty=y-off-(t.length-1)*17+2}else if(pos==='bl'){ax='end';tx=x-off;ty=y+off+10}else if(pos==='br'){ax='start';tx=x+off;ty=y+off+10}
+  else if(pos==='u'){ax='start';tx=x+3;ty=y-off-2;rot=` transform="rotate(-50 ${tx} ${ty})"`}
+  lab+=`<text x="${tx}" y="${ty}" text-anchor="${ax}" class="krt${big?' kb':''}" font-size="${fs}"${rot}>${t.map((s,i)=>`<tspan x="${tx}" dy="${i?17:0}">${s}</tspan>`).join('')}</text>`});
+ const h=KN.KH;lab+=`<g><circle cx="${h[1]}" cy="${h[2]}" r="16" fill="none" stroke="#F6C945" stroke-width="5"/><rect x="${h[1]-132}" y="${h[2]+14}" width="112" height="26" rx="6" fill="#F6C945" stroke="#222" stroke-width="2"/><text x="${h[1]-76}" y="${h[2]+32}" text-anchor="middle" font-size="15" font-weight="900" fill="#222">🏨 우리 숙소</text></g>`;
+ return `<svg viewBox="0 0 1180 1140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오사카 메트로 한글 노선도">${g}${dots}${lab}</svg>`;
+}
+function krMap(z){
+ if(z)kZ=Math.max(1,Math.min(5,kZ+z));
+ const old=document.querySelector('#kvw'),fx=old?(old.scrollLeft+old.clientWidth/2)/Math.max(1,old.scrollWidth):KN.KH[1]/1180,fy=old?(old.scrollTop+old.clientHeight/2)/Math.max(1,old.scrollHeight):KN.KH[2]/1140;
+ openOv(`<div class="ph2"><b>한글 노선도 (오사카 메트로)</b><button class="x" onclick="closeOv()" aria-label="닫기">✕</button></div>
+ <div class="mzb"><button class="btn ln" onclick="krMap(-1)" aria-label="작게">－ 작게</button><span>${kZ}배</span><button class="btn" onclick="krMap(1)" aria-label="크게">＋ 크게</button></div>
+ <div id="kvw" class="mvw kvw" style="background:#fff;color:#222"><div style="width:${kZ*100}%">${krSvg()}</div></div>
+ <p class="hint" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:8px">${KL.map(l=>`<span><span class="stc" style="background:${l[2]}">${l[0]}</span> ${l[1]}</span>`).join('')}</p>
+ <p class="hint">손가락으로 끌면 움직여요. 굵은 글씨는 큰 환승역이에요. 거리와 모양은 대략이라 실제와 달라요. 다른 노선은 위 공식 노선도·역 이름표를 써 주세요.</p>`);
+ const w=$('#kvw');if(w){w.scrollLeft=fx*w.scrollWidth-w.clientWidth/2;w.scrollTop=fy*w.scrollHeight-w.clientHeight/2}
 }
 /* 한국어 역 이름표 — 오사카 메트로 공식 노선도에서 확인한 역 번호 */
 const LINES=[['M','미도스지선','#E5171F'],['Y','요쓰바시선','#0079C2'],['C','주오선','#019A66'],['T','다니마치선','#522886'],['S','센니치마에선','#E96FA7'],['K','사카이스지선','#814721'],['N','나가호리쓰루미료쿠치선','#A9CC51']];
